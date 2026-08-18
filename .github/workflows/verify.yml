@@ -1,0 +1,96 @@
+# Repository quality checks.
+#
+# SUAS-specs HANDOFF.md §5 ("CI workflow(s) once toolchain exists");
+# SUAS-specs ENVIRONMENT.md §5 (configuration validation runs in tests);
+# SUAS-specs ENVIRONMENT.md §8 (builds intended for shared testing carry provenance);
+# SUAS-specs TESTING.md §2 (unit, integration, and migration layers).
+#
+# TEST is a synthetic-only environment class: no real veteran data and no real
+# external side effects (ENVIRONMENT.md §2).
+
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: suas
+          POSTGRES_PASSWORD: suas
+          POSTGRES_DB: suas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U suas"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Explicit environment class; never inferred (ENVIRONMENT.md §2).
+      SUAS_ENV: TEST
+      SUAS_SPEC_VERSION: '0.1.1'
+      SUAS_RELEASE_MANIFEST: RELEASE_MANIFEST-0.1.1.md
+      SUAS_ALLOW_REAL_EXTERNAL_EFFECTS: 'false'
+      SUAS_MIGRATIONS_MODE: apply
+      SUAS_EMAIL_MODE: fake
+      SUAS_SMS_MODE: fake
+      SUAS_TRANSPORTATION_ADAPTER_MODE: fake
+      SUAS_SHELTER_ADAPTER_MODE: fake
+      SUAS_FOOD_ADAPTER_MODE: fake
+      SUAS_PEER_SUPPORT_ADAPTER_MODE: manual
+      SUAS_SUPPORT_SIGNAL_MODE: fixture
+      SUAS_SAFETY_COPY_MODE: placeholder_test_only
+      SUAS_SENSITIVE_AGGREGATE_REPORTING: disabled
+      DATABASE_URL: postgresql://suas:suas@localhost:5432/suas_test
+      TEST_DATABASE_URL: postgresql://suas:suas@localhost:5432/suas_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Stamp build provenance
+        # ENVIRONMENT.md §8: commit SHA and build timestamp for shared builds.
+        run: |
+          echo "SUAS_BUILD_COMMIT=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "SUAS_BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Migration harness against a fresh database
+        run: npm run migrate -- apply
+
+      - name: Build provenance surface
+        run: npm run provenance

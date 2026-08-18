@@ -1,0 +1,136 @@
+/**
+ * Migration harness integration evidence (requires PostgreSQL).
+ *
+ * SUAS-specs ENVIRONMENT.md §3 "Data / persistence", §5, §9;
+ * SUAS-specs VERSIONING.md §3.5;
+ * SUAS-specs TESTING.md §2 "Migration/restore" layer.
+ */
+
+import { Pool } from 'pg';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import {
+  EXPECTED_SCHEMA_VERSION,
+  MIGRATIONS_TABLE,
+  readAppliedMigrations,
+  readSchemaVersion,
+  runMigrations,
+  SchemaStateError,
+} from '../../src/db/index.js';
+import { RELEASE_MANIFEST, SPEC_VERSION } from '../../src/release/pins.js';
+import { testDatabaseUrl } from '../helpers/env.js';
+
+const provenance = { specVersion: SPEC_VERSION, releaseManifest: RELEASE_MANIFEST };
+const pool = new Pool({ connectionString: testDatabaseUrl(), max: 4 });
+
+async function resetDatabase(): Promise<void> {
+  await pool.query(`DROP TABLE IF EXISTS ${MIGRATIONS_TABLE}`);
+  await pool.query('DROP TABLE IF EXISTS suas_schema_metadata');
+}
+
+beforeEach(resetDatabase);
+afterAll(async () => {
+  await resetDatabase();
+  await pool.end();
+});
+
+describe('apply mode', () => {
+  it('applies pending migrations and records the schema version', async () => {
+    const result = await runMigrations(pool, { mode: 'apply', provenance });
+    expect(result.schemaVersion).toBe(EXPECTED_SCHEMA_VERSION);
+    expect(result.appliedNow).toEqual([1]);
+
+    const applied = await readAppliedMigrations(pool);
+    expect(applied).toHaveLength(EXPECTED_SCHEMA_VERSION);
+    expect(applied[0]?.name).toBe('baseline');
+  });
+
+  it('is idempotent when re-run', async () => {
+    await runMigrations(pool, { mode: 'apply', provenance });
+    const second = await runMigrations(pool, { mode: 'apply', provenance });
+    expect(second.appliedNow).toEqual([]);
+    expect(second.schemaVersion).toBe(EXPECTED_SCHEMA_VERSION);
+  });
+
+  it('records the released spec stack the schema was built for', async () => {
+    const result = await runMigrations(pool, { mode: 'apply', provenance });
+    expect(result.schemaProvenance).toEqual({
+      specVersion: SPEC_VERSION,
+      releaseManifest: RELEASE_MANIFEST,
+    });
+    expect(result.specStackDrift).toBe(false);
+  });
+
+  it('serializes concurrent runs so a migration is applied once', async () => {
+    const results = await Promise.all([
+      runMigrations(pool, { mode: 'apply', provenance }),
+      runMigrations(pool, { mode: 'apply', provenance }),
+    ]);
+    const totalApplied = results.flatMap((result) => result.appliedNow);
+    expect(totalApplied).toEqual([1]);
+    expect(await readSchemaVersion(pool)).toBe(EXPECTED_SCHEMA_VERSION);
+  });
+});
+
+describe('validate mode', () => {
+  it('passes against a fully migrated database', async () => {
+    await runMigrations(pool, { mode: 'apply', provenance });
+    const result = await runMigrations(pool, { mode: 'validate', provenance });
+    expect(result.schemaVersion).toBe(EXPECTED_SCHEMA_VERSION);
+    expect(result.appliedNow).toEqual([]);
+  });
+
+  it('rejects a database with pending migrations', async () => {
+    await expect(runMigrations(pool, { mode: 'validate', provenance })).rejects.toThrow(
+      SchemaStateError,
+    );
+    await expect(runMigrations(pool, { mode: 'validate', provenance })).rejects.toThrow(
+      /migration\(s\) are pending/,
+    );
+  });
+
+  it('never mutates the schema', async () => {
+    await runMigrations(pool, { mode: 'validate', provenance }).catch(() => undefined);
+    const applied = await readAppliedMigrations(pool);
+    expect(applied).toHaveLength(0);
+  });
+});
+
+describe('ENVIRONMENT.md §9 — reject unsafe schema states', () => {
+  it('rejects a migration edited after it was applied', async () => {
+    await runMigrations(pool, { mode: 'apply', provenance });
+    await pool.query(`UPDATE ${MIGRATIONS_TABLE} SET checksum = 'tampered' WHERE version = 1`);
+    await expect(runMigrations(pool, { mode: 'validate', provenance })).rejects.toThrow(
+      /was modified after it was applied/,
+    );
+  });
+
+  it('rejects a database ahead of this build', async () => {
+    await runMigrations(pool, { mode: 'apply', provenance });
+    await pool.query(
+      `INSERT INTO ${MIGRATIONS_TABLE} (version, name, checksum) VALUES (99, 'future_work', 'x')`,
+    );
+    await expect(runMigrations(pool, { mode: 'validate', provenance })).rejects.toThrow(
+      /has no file on disk/,
+    );
+  });
+
+  it('rejects a schema version the build does not expect', async () => {
+    await expect(
+      runMigrations(pool, { mode: 'apply', provenance, expectedSchemaVersion: 99 }),
+    ).rejects.toThrow(/this build requires 99/);
+  });
+});
+
+describe('off mode', () => {
+  it('performs no database work', async () => {
+    const result = await runMigrations(pool, { mode: 'off', provenance });
+    expect(result.schemaVersion).toBe(0);
+    expect(result.appliedNow).toEqual([]);
+
+    const exists = await pool.query<{ present: boolean }>(
+      `SELECT to_regclass($1) IS NOT NULL AS present`,
+      [MIGRATIONS_TABLE],
+    );
+    expect(exists.rows[0]?.present).toBe(false);
+  });
+});
