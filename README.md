@@ -2,47 +2,50 @@
 
 Shut Up and Serve (SUAS) is the implementation repository for the consent-governed veteran support coordination platform specified in [`scrimshawlife-ctrl/SUAS-specs`](https://github.com/scrimshawlife-ctrl/SUAS-specs).
 
-## Current implementation status
+## Start here
 
-- Application code: not yet started
-- Released specification: `0.1.0`
-- Specification lifecycle: `released`
-- Implementation authority: `RELEASED_FOR_IMPLEMENTATION`
-- Current stage: `SPEC-017` implementation conformance
-- Pilot readiness: `NOT_READY`
-- Production readiness: `NOT_READY`
+**Fable:** read [FABLE_HANDOFF.md](FABLE_HANDOFF.md), then [CONTEXT.md](CONTEXT.md), [AGENTS.md](AGENTS.md), and [SPEC017_PLAN.md](SPEC017_PLAN.md).
 
-Canonical release source:
+Canonical released specs:
 
-- `SUAS-specs/main` release merge: `25babc95538a9492cc4c6c26c3f188b4873e2110`
-- Release manifest: `RELEASE_MANIFEST-0.1.0.md`
-- Release decision ledger: `RELEASE_DECISIONS-0.1.0.md`
+- specification stack: `0.1.1`
+- specs merge: `e7aaf5d8ec1f7b646f3fd96866947b40c37f84fb`
+- manifest: `RELEASE_MANIFEST-0.1.1.md`
+- current stage: `SPEC-017` implementation conformance
+- implementation authority: `RELEASED_FOR_IMPLEMENTATION`
+- pilot readiness: `NOT_READY`
+- production readiness: `NOT_READY`
+
+## Environment
+
+`.env.example` maps the released [SUAS-specs `ENVIRONMENT.md`](https://github.com/scrimshawlife-ctrl/SUAS-specs/blob/main/ENVIRONMENT.md) contract.
+
+Logical classes are `LOCAL`, `TEST`, `STAGING`, `PRODUCTION`. LOCAL/TEST/STAGING must not use real veteran data or real external support effects. Invalid environment/feature combinations must fail closed at startup.
 
 ## Release boundary
 
-The v0.1.0 release authorizes implementation but **not** production operation.
+v0.1.1 authorizes implementation but not production operation.
 
-Production-unavailable until later decisions/evidence close:
+Production-unavailable until later decision/evidence closure:
 
-- production hosting/auth/email/SMS/database/job infrastructure;
-- real veteran data and live pilot operation;
+- production infrastructure and real veteran data/live pilot;
 - production Support Signal scoring;
 - official safety/crisis copy;
 - real transportation/shelter/food/external peer providers;
 - production workload/SLO/RTO/RPO targets;
-- small/sensitive aggregate reporting.
+- sensitive aggregate reporting.
 
-Manual/fake/test adapters are valid where the release manifest permits them.
+Manual/fake/test adapters are valid where the release permits them.
 
 ## Governing rules
 
-1. `SUAS-specs` is canonical. This repository implements released contracts; it does not redefine them.
-2. Every implementation PR cites released spec file, section, stack version, lifecycle, and release manifest.
-3. If code needs an unstated rule, return the gap to `SUAS-specs` rather than inventing behavior here.
-4. Preserve the released MVP visual/interaction model, including action-first veteran and responder/QRF flows and truthful degraded/no-availability states.
-5. Keep rides, temporary shelter/rooms, food, and peer-support integrations provider-neutral. Vendor SDKs stay behind adapters.
-6. Preserve stateless horizontal application semantics, durable async-work contracts, command/provider idempotency, tenant isolation, and replay-safe events.
+1. `SUAS-specs` is canonical; code does not redefine it.
+2. Every implementation PR cites released spec file/section, stack version, manifest, and relevant test/readiness contract.
+3. Semantic gaps return to specs rather than becoming implementation defaults.
+4. Preserve the MVP visual/interaction identity and required truthful degraded/no-availability states.
+5. Provider SDKs/statuses/payloads stay behind adapters; domain modules use SUAS-owned ports.
+6. Preserve stateless/shared correctness state, durable async-work semantics, persistent idempotency, tenant isolation, replay-safe events, and bounded access paths.
 7. No automated emergency dispatch, diagnosis, suicidality determination, or safety-critical generative AI.
-8. Do not claim HIPAA compliance or production readiness from release alone.
+8. Do not claim HIPAA compliance or production readiness from release/implementation alone.
 
-See [AGENTS.md](AGENTS.md), [IMPLEMENTATION_BOOTSTRAP.md](IMPLEMENTATION_BOOTSTRAP.md), and [SPEC017_PLAN.md](SPEC017_PLAN.md).
+See [FABLE_HANDOFF.md](FABLE_HANDOFF.md), [CONTEXT.md](CONTEXT.md), [AGENTS.md](AGENTS.md), [IMPLEMENTATION_BOOTSTRAP.md](IMPLEMENTATION_BOOTSTRAP.md), and [SPEC017_PLAN.md](SPEC017_PLAN.md).
