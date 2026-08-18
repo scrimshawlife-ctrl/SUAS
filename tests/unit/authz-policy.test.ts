@@ -14,9 +14,7 @@ import {
   assertSuasAdmin,
   assertTenant,
   authorize,
-  ConsentEvaluationUnavailableError,
   ForbiddenError,
-  requireConsentBasis,
   ResourceNotVisibleError,
   rolesInOrganization,
   type AuthContext,
@@ -167,18 +165,14 @@ describe('SECURITY.md §5 — deny by default', () => {
   });
 });
 
-describe('AUTH.md §1 — consent is the fourth input and is not yet available', () => {
-  it('refuses a disclosure decision rather than defaulting it to allow', () => {
-    expect(() => requireConsentBasis('PROVIDER_DISCLOSURE')).toThrow(
-      ConsentEvaluationUnavailableError,
-    );
-  });
-
-  it('reports the released denial code for a missing consent basis', () => {
-    try {
-      requireConsentBasis('NOTIFY_TRUSTED_CONTACT');
-    } catch (error) {
-      expect(error).toMatchObject({ code: 'CONSENT_DENIED', httpStatus: 403 });
-    }
+describe('AUTH.md §1 — consent is a separate fourth input', () => {
+  it('does not let a role check stand in for a consent decision', () => {
+    // Passing role, tenant, and row says nothing about whether the veteran
+    // consented to a disclosure. Use-time evaluation lives in src/consent and is
+    // exercised by tests/integration/consent.test.ts.
+    const ctx = context({ memberships: [membership(ORG_A, 'RESPONDER')] });
+    expect(() =>
+      authorize(ctx, { tenantId: TENANT_A, organizationId: ORG_A, roles: ['RESPONDER'] }),
+    ).not.toThrow();
   });
 });

@@ -12,7 +12,7 @@
 | 1 — Foundation                          | `IMPLEMENTED` | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md)               |
 | 2 — Event/idempotency kernel            | `IMPLEMENTED` | [docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md](docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md) |
 | 3 — Identity / tenancy / authorization  | `IMPLEMENTED` | [docs/slices/SLICE_03_IDENTITY_TENANCY.md](docs/slices/SLICE_03_IDENTITY_TENANCY.md)   |
-| 4 — Consent and privacy kernel          | `NOT_STARTED` | —                                                                                      |
+| 4 — Consent and privacy kernel          | `IMPLEMENTED` | [docs/slices/SLICE_04_CONSENT_PRIVACY.md](docs/slices/SLICE_04_CONSENT_PRIVACY.md)     |
 | 5 — Coordination kernel                 | `NOT_STARTED` | —                                                                                      |
 | 6 — Follow-Up / Settlement              | `NOT_STARTED` | —                                                                                      |
 | 7 — Resources / fulfillment             | `NOT_STARTED` | —                                                                                      |
@@ -21,10 +21,14 @@
 | 10 — MVP-reference UI                   | `NOT_STARTED` | —                                                                                      |
 | 11 — Scale / resilience harness         | `NOT_STARTED` | —                                                                                      |
 
-Slices 1-3 returned twenty-one semantic/mechanism questions to specs; see the gaps
-section of each record. Slice 3 closed one of Slice 1's (admin authorization for the
-build-info surface). No readiness gate has advanced, and production remains blocked
-until SPEC-018.
+Slices 1-4 returned twenty-nine semantic/mechanism questions to specs; see the gaps
+section of each record. Slice 3 closed one of Slice 1's, and Slice 4 closed Slice 3's
+consent seam. No readiness gate has advanced, and production remains blocked until
+SPEC-018.
+
+The most consequential open gap is Slice 4 §10 item 1: v0.1.1 releases no
+per-capability provider disclosure projection, so Slice 7 cannot build a real
+adapter disclosure until those contracts exist.
 
 ## Objective
 

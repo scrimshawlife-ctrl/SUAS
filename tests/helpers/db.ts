@@ -22,7 +22,8 @@ export function createTestPool(max = 6): Pool {
 export async function resetKernelTables(pool: Pool): Promise<void> {
   await pool.query(`
     TRUNCATE processed_events, event_outbox, command_idempotency_records, audit_events,
-             domain_events, sessions, auth_challenges, auth_rate_limits,
+             domain_events, consent_events, consent_grants, trusted_contacts,
+             consent_template_versions, sessions, auth_challenges, auth_rate_limits,
              suas_admin_grants, organization_memberships, organizations, users
     RESTART IDENTITY CASCADE
   `);
