@@ -1,0 +1,41 @@
+# Secrets / local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Dependency / build output
+node_modules/
+dist/
+build/
+.next/
+coverage/
+.cache/
+.tmp/
+tmp/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local databases / artifacts
+*.sqlite
+*.sqlite3
+*.db
+artifacts/
+
+# Logs
+*.log
+logs/
