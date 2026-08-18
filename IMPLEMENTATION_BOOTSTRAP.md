@@ -1,75 +1,67 @@
-# IMPLEMENTATION_BOOTSTRAP.md — Pre-release handoff
+# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.0 handoff
 
-**Status:** planning only  
-**Implementation authority:** `NOT_YET_RELEASED`
+**Status:** `ACTIVE`  
+**Released specification:** `0.1.0`  
+**Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`  
+**Current stage:** `SPEC-017`
 
-## Purpose
+## Canonical source
 
-Prepare the implementation repository so work can begin immediately after the first released specification cut without allowing draft specs to become hidden product authority.
+- Specs release merge: `25babc95538a9492cc4c6c26c3f188b4873e2110`
+- Release manifest: `RELEASE_MANIFEST-0.1.0.md`
+- Release decision ledger: `RELEASE_DECISIONS-0.1.0.md`
 
-## Current canonical source
+## Implementation sequence
 
-The latest production-hardening preflight is merged into `scrimshawlife-ctrl/SUAS-specs/main` at:
+Proceed in this order unless a released spec change explicitly changes the dependency graph:
 
-`96631dc1cf09768a8fe5550e620e3e1bde5377c9`
-
-That commit is provenance for the current design discussion only. It remains `draft` until the owner completes the staged acceptance path and SPEC-016 releases a named contract.
-
-## Release-triggered bootstrap sequence
-
-When SPEC-016 becomes `RELEASED_FOR_IMPLEMENTATION`, implementation should proceed in this order:
-
-1. Read the SPEC-016 release manifest and pinned decisions/artifact versions.
-2. Create an implementation change map that maps every first-slice file/package to released spec sections.
-3. Scaffold the modular monolith without embedding provider brands into domain modules.
-4. Establish shared PostgreSQL logical schema/migrations for released entities and constraints.
+1. Read the v0.1.0 release manifest and feature-availability boundaries.
+2. Create a change map that maps every implementation package/file to released spec sections.
+3. Scaffold the modular monolith without provider brands in domain modules.
+4. Establish PostgreSQL logical schema/migration/test harness for released entities and constraints.
 5. Implement persistent command idempotency and replay-safe event publication before externally consequential workflows.
-6. Implement auth/session revocation and tenant isolation foundations.
-7. Implement Case, Service Request, Consent, Follow-Up, Settlement, Notification, and Fulfillment state machines with their critical suites.
-8. Implement provider capability ports plus fake/manual adapters before real vendor adapters.
-9. Implement MVP-reference veteran/responder/admin surfaces with deterministic visual fixtures.
-10. Add durable workers for released asynchronous workloads.
-11. Add scale/resilience observability and failure drills.
-12. Run SPEC-017 implementation conformance against the released manifest before claiming completion.
+6. Implement auth/session revocation, tenant isolation, and authorization foundations.
+7. Implement Consent, Case, Service Request, Follow-Up, Settlement, Notification, and Fulfillment state machines with critical suites.
+8. Implement provider capability ports plus fake/manual adapters before any real provider adapter.
+9. Implement Check-In and Support Signal engine interface; production scoring remains unavailable until D-011 closes.
+10. Implement MVP-reference veteran/responder/admin surfaces with deterministic visual fixtures and truthful degraded states.
+11. Implement durable worker abstractions and test/fake execution paths without selecting an unapproved production queue vendor.
+12. Add scale/resilience observability and failure-test harnesses.
+13. Run SPEC-017 conformance continuously and return every contract gap to `SUAS-specs`.
 
-## First implementation slices after release
+## First implementation slices
 
-The expected order is:
-
-- Foundation: project/tooling, config validation, database connection, migration harness, test harness
+- Foundation: project/tooling, config validation, DB/migration/test harness
 - Identity/tenancy: User, Organization, Membership, Session, MFA boundaries
-- Event/idempotency kernel: command dedupe, event envelope, outbox-equivalent publication
+- Event/idempotency kernel
 - Consent/privacy authorization kernel
 - Case/Service Request state machines and responder claim queue
-- Follow-Up and Settlement cycle semantics
+- Follow-Up and multi-cycle Settlement semantics
 - Resource/Referral/FulfillmentAttempt/Fulfillment domain
-- Notification jobs and channel adapters
+- Notification logical-send jobs and fake channel adapters
 - Provider Router + Manual/Fake adapters
-- Check-In + Support Signal engine once released scoring fixtures exist
-- Veteran/responder/admin UI against the released MVP reference
-- External provider adapters enabled only by released decisions
+- Check-In + Support Signal interface with unreleased test fixtures only
+- Veteran/responder/admin UI against MVP_REFERENCE
 
-## Hard blocks until release
+## Production-unavailable boundaries
 
-Do not guess or hard-code:
+Do not make these operational merely because implementation can be written:
 
-- cloud/database/auth/SMS/email/queue vendors;
-- transportation, room/shelter, food, or external peer-support vendors;
-- Support Signal scoring weights;
-- approved safety copy;
-- production capacity or SLO values;
+- production cloud/database/auth/SMS/email/queue vendors;
+- real external transportation/room/food/peer vendors;
+- real veteran data or live pilot operation;
+- production Support Signal scoring weights;
+- official safety/crisis copy;
+- production workload/SLO values;
 - RTO/RPO;
-- legal/HIPAA classification;
+- legal/HIPAA classification or compliance claims;
 - pilot partner/staffing facts;
-- reporting privacy threshold/policy.
+- small/sensitive aggregate-reporting threshold/policy.
 
-## Definition of implementation start
+Manual/fake/test implementations are allowed only where the release manifest permits them.
 
-Implementation begins only when a released SPEC-016 manifest identifies:
+## Definition of SPEC-017 start
 
-- released stack/version;
-- source commit;
-- applicable artifact versions;
-- decision ledger;
-- enabled/manual-only/unavailable feature states;
-- implementation authority = `RELEASED_FOR_IMPLEMENTATION`.
+SPEC-017 begins when implementation work cites the released v0.1.0 artifacts and records conformance evidence per slice. It completes only when the implementation has been compared against the released cut and all identified gaps have either been fixed or returned to specs.
+
+SPEC-017 completion still does not authorize production; SPEC-018 remains the go/no-go stage.
