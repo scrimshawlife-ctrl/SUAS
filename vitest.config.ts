@@ -10,6 +10,7 @@ export default defineConfig({
       forks: { singleFork: true },
     },
     setupFiles: ['tests/setup.ts'],
+    globalSetup: ['tests/global-setup.ts'],
     testTimeout: 20_000,
   },
 });

@@ -33,6 +33,15 @@ function buildInfoRouteAllowed(config: SuasConfig): boolean {
   return config.environment !== 'PRODUCTION';
 }
 
+/** Errors that declare a released API error code and HTTP status. API.md §6. */
+function asDomainError(error: unknown): { code: string; httpStatus: number } | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const candidate = error as { code?: unknown; httpStatus?: unknown };
+  return typeof candidate.code === 'string' && typeof candidate.httpStatus === 'number'
+    ? { code: candidate.code, httpStatus: candidate.httpStatus }
+    : undefined;
+}
+
 export function createServer(deps: ServerDependencies): FastifyInstance {
   const app = Fastify({
     logger: {
@@ -70,18 +79,23 @@ export function createServer(deps: ServerDependencies): FastifyInstance {
   });
 
   app.setErrorHandler((error: FastifyError, request, reply) => {
-    const status = error.statusCode ?? 500;
+    // Domain errors carry their own released conflict code and status
+    // (API.md §6): for example IDEMPOTENCY_CONFLICT from the idempotency kernel.
+    const domain = asDomainError(error);
+    const status = domain?.httpStatus ?? error.statusCode ?? 500;
+
     if (status >= 500) {
       request.log.error({ err: error }, 'unhandled request failure');
     }
     void reply.status(status).send({
       error: {
         code:
-          status === 400
+          domain?.code ??
+          (status === 400
             ? 'VALIDATION_FAILED'
             : status >= 500
               ? 'INTERNAL_ERROR'
-              : 'REQUEST_FAILED',
+              : 'REQUEST_FAILED'),
         // Non-sensitive message only; internals are logged, not returned.
         message: status >= 500 ? 'Unexpected internal failure.' : error.message,
       },
