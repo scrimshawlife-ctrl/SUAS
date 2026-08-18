@@ -12,9 +12,10 @@
  * - SUAS-specs API.md §4 — cross-tenant hidden resources return 404 or a scoped
  *   denial without existence leakage; missing consent returns 403 CONSENT_DENIED.
  *
- * Consent is the fourth input and does not exist yet: Slice 4 owns it. Rather
- * than defaulting it to "allow", any disclosure-class decision routed through
- * here fails closed until that slice lands.
+ * Consent is the fourth input and lives in `src/consent`: role, tenant, and row
+ * are evaluated here, while use-time consent evaluation is
+ * `requireDisclosure()`. They are separate because a caller needs both — passing
+ * a role check never implies a disclosure is consented.
  */
 
 import type { MembershipRole } from '../identity/organizations.js';
@@ -53,33 +54,6 @@ export class ResourceNotVisibleError extends Error {
     super('Resource not found.');
     this.name = 'ResourceNotVisibleError';
   }
-}
-
-/**
- * Raised when code asks for a consent-based decision before the consent kernel
- * exists. Fails closed by construction: there is no permissive branch.
- */
-export class ConsentEvaluationUnavailableError extends Error {
-  readonly code = 'CONSENT_DENIED';
-  readonly httpStatus = 403;
-
-  constructor(purpose: string) {
-    super(
-      `Consent basis for "${purpose}" cannot be evaluated: the Consent kernel is not ` +
-        `implemented until SPEC017_PLAN.md Slice 4. Disclosure is refused rather than ` +
-        `assumed (SUAS-specs AUTH.md §1; CONSENT.md).`,
-    );
-    this.name = 'ConsentEvaluationUnavailableError';
-  }
-}
-
-/**
- * The consent seam. Every share, notify, or provider-disclosure path must route
- * through use-time consent evaluation; until Slice 4 provides it, calling this
- * refuses the disclosure.
- */
-export function requireConsentBasis(purpose: string): never {
-  throw new ConsentEvaluationUnavailableError(purpose);
 }
 
 /** Deny unless the context is scoped to the tenant that owns the row. */
