@@ -1,0 +1,77 @@
+export {
+  CHALLENGE_ISSUE_LIMIT,
+  CHALLENGE_ISSUE_WINDOW_SECONDS,
+  CHALLENGE_MAX_ATTEMPTS,
+  CHALLENGE_TTL_SECONDS,
+  CHALLENGE_VERIFY_LIMIT,
+  CHALLENGE_VERIFY_WINDOW_SECONDS,
+  INFERRED,
+  INFERRED_AUTH_CONSTANTS,
+  MFA_ELEVATION_TTL_SECONDS,
+  OTP_CODE_DIGITS,
+  SESSION_ABSOLUTE_TTL_SECONDS,
+  SESSION_IDLE_TTL_SECONDS,
+  type InferredConstant,
+} from './constants.js';
+export {
+  credentialMatches,
+  generateOpaqueToken,
+  generateOtpCode,
+  hashCredential,
+  normalizeDestination,
+  SessionSecretMissingError,
+} from './secrets.js';
+export {
+  consumeRateLimit,
+  enforceRateLimit,
+  pruneRateLimits,
+  RateLimitExceededError,
+  type RateLimitOutcome,
+  type RateLimitPolicy,
+} from './rate-limit.js';
+export {
+  availableChannels,
+  CHALLENGE_METHODS,
+  channelForMethod,
+  ChannelUnavailableError,
+  createChallengeDelivery,
+  RecordingChallengeDelivery,
+  type ChallengeChannel,
+  type ChallengeDelivery,
+  type ChallengeDeliveryPort,
+  type ChallengeMethod,
+  type RecordedDelivery,
+} from './delivery.js';
+export {
+  ChallengeVerificationFailedError,
+  issueChallenge,
+  revokeLiveChallenges,
+  verifyChallenge,
+  type ChallengeServiceDeps,
+  type ChallengeStatus,
+  type IssueChallengeInput,
+  type IssueChallengeResult,
+  type VerifyChallengeInput,
+} from './challenge.js';
+export {
+  clearElevation,
+  createSession,
+  elevateSession,
+  isElevated,
+  resolveSession,
+  revokeAllUserSessions,
+  revokeSession,
+  type IssuedSession,
+  type Session,
+  type SessionRejection,
+  type SessionResolution,
+} from './session.js';
+export {
+  createMfaPort,
+  MfaRequiredError,
+  MfaUnavailableError,
+  TestMfaFactor,
+  type MfaChallenge,
+  type MfaFactorType,
+  type MfaPort,
+} from './mfa.js';

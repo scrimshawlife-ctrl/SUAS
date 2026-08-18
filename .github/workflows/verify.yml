@@ -76,6 +76,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate a throwaway session secret
+        # Authentication is an enabled capability, so SUAS_SESSION_SECRET is
+        # required (ENVIRONMENT.md §5). Generated per run and never committed
+        # (ENVIRONMENT.md §6-§7).
+        run: echo "SUAS_SESSION_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
       - name: Stamp build provenance
         # ENVIRONMENT.md §8: commit SHA and build timestamp for shared builds.
         run: |
