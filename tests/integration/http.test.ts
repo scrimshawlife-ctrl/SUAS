@@ -8,6 +8,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startApp, type StartedApp } from '../../src/app.js';
 import { ConfigurationError, loadConfig } from '../../src/config/index.js';
+import { EXPECTED_SCHEMA_VERSION } from '../../src/db/index.js';
 import { createServer } from '../../src/http/server.js';
 import { buildInfo } from '../../src/provenance/build-info.js';
 import { validEnv } from '../helpers/env.js';
@@ -58,7 +59,7 @@ describe('GET /api/v0/admin/build-info', () => {
     expect(body.release_manifest).toBe('RELEASE_MANIFEST-0.1.1.md');
     expect(body.api_version).toBe('v0');
     expect(body.event_schema_version).toBe('0.1.0');
-    expect(body.schema_version).toBe(1);
+    expect(body.schema_version).toBe(EXPECTED_SCHEMA_VERSION);
     expect(body.environment).toBe('TEST');
     expect(body.production_readiness).toBe('NOT_READY');
   });

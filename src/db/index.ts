@@ -1,4 +1,5 @@
 export { createPool, DatabaseNotConfiguredError } from './pool.js';
+export { withTransaction, type Queryable } from './transaction.js';
 export {
   ensureMigrationsTable,
   planMigrations,

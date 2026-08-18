@@ -35,3 +35,14 @@ export function validEnv(overrides: ConfigSource = {}): ConfigSource {
 export function testDatabaseUrl(): string {
   return process.env.TEST_DATABASE_URL ?? 'postgresql://suas:suas@localhost:5432/suas_test';
 }
+
+/**
+ * Separate database for migration-harness tests. Those tests drop and rebuild the
+ * schema, which would otherwise pull it out from under the other suites.
+ */
+export function migrationsTestDatabaseUrl(): string {
+  return (
+    process.env.TEST_MIGRATIONS_DATABASE_URL ??
+    'postgresql://suas:suas@localhost:5432/suas_migrations_test'
+  );
+}

@@ -43,7 +43,16 @@ Commands:
 | `npm run migrate -- validate` | verify schema state without mutating it                |
 | `npm run provenance`          | print the build-info object                            |
 
-Integration tests expect a `suas_test` database; override with `TEST_DATABASE_URL`.
+Integration tests use two databases, created once:
+
+```bash
+createdb suas_test
+createdb suas_migrations_test
+```
+
+`suas_test` is shared by the suites and is migrated automatically before the run. The
+migration-harness tests rebuild a schema from empty, so they own `suas_migrations_test`
+separately. Override either with `TEST_DATABASE_URL` and `TEST_MIGRATIONS_DATABASE_URL`.
 
 HTTP surface in this slice:
 

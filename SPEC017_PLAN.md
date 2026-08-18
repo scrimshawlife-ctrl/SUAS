@@ -7,22 +7,23 @@
 
 ## Progress
 
-| Slice                                   | Status        | Record                                                                   |
-| --------------------------------------- | ------------- | ------------------------------------------------------------------------ |
-| 1 — Foundation                          | `IMPLEMENTED` | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md) |
-| 2 — Event/idempotency kernel            | `NOT_STARTED` | —                                                                        |
-| 3 — Identity / tenancy / authorization  | `NOT_STARTED` | —                                                                        |
-| 4 — Consent and privacy kernel          | `NOT_STARTED` | —                                                                        |
-| 5 — Coordination kernel                 | `NOT_STARTED` | —                                                                        |
-| 6 — Follow-Up / Settlement              | `NOT_STARTED` | —                                                                        |
-| 7 — Resources / fulfillment             | `NOT_STARTED` | —                                                                        |
-| 8 — Notifications                       | `NOT_STARTED` | —                                                                        |
-| 9 — Check-In / Support Signal interface | `NOT_STARTED` | —                                                                        |
-| 10 — MVP-reference UI                   | `NOT_STARTED` | —                                                                        |
-| 11 — Scale / resilience harness         | `NOT_STARTED` | —                                                                        |
+| Slice                                   | Status        | Record                                                                                 |
+| --------------------------------------- | ------------- | -------------------------------------------------------------------------------------- |
+| 1 — Foundation                          | `IMPLEMENTED` | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md)               |
+| 2 — Event/idempotency kernel            | `IMPLEMENTED` | [docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md](docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md) |
+| 3 — Identity / tenancy / authorization  | `NOT_STARTED` | —                                                                                      |
+| 4 — Consent and privacy kernel          | `NOT_STARTED` | —                                                                                      |
+| 5 — Coordination kernel                 | `NOT_STARTED` | —                                                                                      |
+| 6 — Follow-Up / Settlement              | `NOT_STARTED` | —                                                                                      |
+| 7 — Resources / fulfillment             | `NOT_STARTED` | —                                                                                      |
+| 8 — Notifications                       | `NOT_STARTED` | —                                                                                      |
+| 9 — Check-In / Support Signal interface | `NOT_STARTED` | —                                                                                      |
+| 10 — MVP-reference UI                   | `NOT_STARTED` | —                                                                                      |
+| 11 — Scale / resilience harness         | `NOT_STARTED` | —                                                                                      |
 
-Slice 1 returned seven semantic/mechanism questions to specs; see §9 of its record.
-No readiness gate has advanced, and production remains blocked until SPEC-018.
+Slices 1 and 2 returned thirteen semantic/mechanism questions to specs; see the gaps
+section of each record. No readiness gate has advanced, and production remains
+blocked until SPEC-018.
 
 ## Objective
 

@@ -10,6 +10,7 @@ import { Pool } from 'pg';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   EXPECTED_SCHEMA_VERSION,
+  loadMigrationFiles,
   MIGRATIONS_TABLE,
   readAppliedMigrations,
   readSchemaVersion,
@@ -17,14 +18,24 @@ import {
   SchemaStateError,
 } from '../../src/db/index.js';
 import { RELEASE_MANIFEST, SPEC_VERSION } from '../../src/release/pins.js';
-import { testDatabaseUrl } from '../helpers/env.js';
+import { migrationsTestDatabaseUrl } from '../helpers/env.js';
 
 const provenance = { specVersion: SPEC_VERSION, releaseManifest: RELEASE_MANIFEST };
-const pool = new Pool({ connectionString: testDatabaseUrl(), max: 4 });
 
+/** Every migration version on disk, so these tests stay correct as slices add them. */
+async function allMigrationVersions(): Promise<number[]> {
+  return (await loadMigrationFiles()).map((file) => file.version);
+}
+// This suite rebuilds the schema from empty, so it owns a database of its own.
+const pool = new Pool({ connectionString: migrationsTestDatabaseUrl(), max: 4 });
+
+/**
+ * Return the database to empty. Dropping the whole schema keeps this correct as
+ * migrations are added, rather than needing a hand-maintained list of objects.
+ */
 async function resetDatabase(): Promise<void> {
-  await pool.query(`DROP TABLE IF EXISTS ${MIGRATIONS_TABLE}`);
-  await pool.query('DROP TABLE IF EXISTS suas_schema_metadata');
+  await pool.query('DROP SCHEMA public CASCADE');
+  await pool.query('CREATE SCHEMA public');
 }
 
 beforeEach(resetDatabase);
@@ -35,12 +46,13 @@ afterAll(async () => {
 
 describe('apply mode', () => {
   it('applies pending migrations and records the schema version', async () => {
+    const versions = await allMigrationVersions();
     const result = await runMigrations(pool, { mode: 'apply', provenance });
     expect(result.schemaVersion).toBe(EXPECTED_SCHEMA_VERSION);
-    expect(result.appliedNow).toEqual([1]);
+    expect(result.appliedNow).toEqual(versions);
 
     const applied = await readAppliedMigrations(pool);
-    expect(applied).toHaveLength(EXPECTED_SCHEMA_VERSION);
+    expect(applied).toHaveLength(versions.length);
     expect(applied[0]?.name).toBe('baseline');
   });
 
@@ -65,8 +77,9 @@ describe('apply mode', () => {
       runMigrations(pool, { mode: 'apply', provenance }),
       runMigrations(pool, { mode: 'apply', provenance }),
     ]);
-    const totalApplied = results.flatMap((result) => result.appliedNow);
-    expect(totalApplied).toEqual([1]);
+    // Each migration is applied exactly once across both concurrent runs.
+    const totalApplied = results.flatMap((result) => result.appliedNow).sort((a, b) => a - b);
+    expect(totalApplied).toEqual(await allMigrationVersions());
     expect(await readSchemaVersion(pool)).toBe(EXPECTED_SCHEMA_VERSION);
   });
 });

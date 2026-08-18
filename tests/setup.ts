@@ -23,3 +23,7 @@ process.env.SUAS_SUPPORT_SIGNAL_MODE ??= 'fixture';
 process.env.SUAS_SAFETY_COPY_MODE ??= 'placeholder_test_only';
 process.env.SUAS_SENSITIVE_AGGREGATE_REPORTING ??= 'disabled';
 process.env.TEST_DATABASE_URL ??= 'postgresql://suas:suas@localhost:5432/suas_test';
+// Migration tests need destructive control of a schema, so they run against a
+// database of their own rather than the one shared by the other suites.
+process.env.TEST_MIGRATIONS_DATABASE_URL ??=
+  'postgresql://suas:suas@localhost:5432/suas_migrations_test';

@@ -56,6 +56,9 @@ jobs:
       SUAS_SENSITIVE_AGGREGATE_REPORTING: disabled
       DATABASE_URL: postgresql://suas:suas@localhost:5432/suas_test
       TEST_DATABASE_URL: postgresql://suas:suas@localhost:5432/suas_test
+      # Migration-harness tests rebuild a schema from empty, so they own a
+      # database separate from the one the other suites share.
+      TEST_MIGRATIONS_DATABASE_URL: postgresql://suas:suas@localhost:5432/suas_migrations_test
 
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +67,11 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+
+      - name: Create the migration-test database
+        env:
+          PGPASSWORD: suas
+        run: psql -h localhost -U suas -d suas_test -c 'CREATE DATABASE suas_migrations_test'
 
       - name: Install dependencies
         run: npm ci
