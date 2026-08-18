@@ -5,13 +5,52 @@
  * SUAS-specs ENVIRONMENT.md §5 (startup fails closed), §8 (build-info surface).
  */
 
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startApp, type StartedApp } from '../../src/app.js';
-import { ConfigurationError, loadConfig } from '../../src/config/index.js';
+import { ConfigurationError } from '../../src/config/index.js';
 import { EXPECTED_SCHEMA_VERSION } from '../../src/db/index.js';
-import { createServer } from '../../src/http/server.js';
-import { buildInfo } from '../../src/provenance/build-info.js';
-import { validEnv } from '../helpers/env.js';
+import { createSession, elevateSession } from '../../src/auth/index.js';
+import { createUser, grantSuasAdmin } from '../../src/identity/index.js';
+import { syntheticEmail } from '../../src/testing/fixture-boundary.js';
+import { TEST_SESSION_SECRET, validEnv } from '../helpers/env.js';
+
+/** Sign in a SUAS admin with an MFA-elevated session, as the admin surface requires. */
+async function elevatedAdminCredential(elevate = true): Promise<string> {
+  const pool = app.pool;
+  if (pool === undefined) throw new Error('The test app has no database pool.');
+
+  const tenantId = randomUUID();
+  const user = await createUser(pool, {
+    tenantId,
+    email: syntheticEmail(`admin-${randomUUID().slice(0, 8)}`),
+    status: 'ACTIVE',
+  });
+  await grantSuasAdmin(pool, user.userId, undefined);
+  const session = await createSession(pool, TEST_SESSION_SECRET, {
+    tenantId,
+    userId: user.userId,
+  });
+  if (elevate) await elevateSession(pool, session.session.sessionId);
+  return session.credential;
+}
+
+/** A signed-in, non-admin, unelevated session. */
+async function plainCredential(): Promise<string> {
+  const pool = app.pool;
+  if (pool === undefined) throw new Error('The test app has no database pool.');
+  const tenantId = randomUUID();
+  const user = await createUser(pool, {
+    tenantId,
+    email: syntheticEmail(`user-${randomUUID().slice(0, 8)}`),
+    status: 'ACTIVE',
+  });
+  const session = await createSession(pool, TEST_SESSION_SECRET, {
+    tenantId,
+    userId: user.userId,
+  });
+  return session.credential;
+}
 
 let app: StartedApp;
 
@@ -47,10 +86,11 @@ describe('GET /api/v0/health', () => {
 });
 
 describe('GET /api/v0/admin/build-info', () => {
-  it('exposes the machine-readable provenance object', async () => {
+  it('exposes the machine-readable provenance object to an elevated SUAS admin', async () => {
     const response = await app.server.inject({
       method: 'GET',
       url: '/api/v0/admin/build-info',
+      headers: { authorization: `Bearer ${await elevatedAdminCredential()}` },
     });
     expect(response.statusCode).toBe(200);
 
@@ -68,20 +108,42 @@ describe('GET /api/v0/admin/build-info', () => {
     const response = await app.server.inject({
       method: 'GET',
       url: '/api/v0/admin/build-info',
+      headers: { authorization: `Bearer ${await elevatedAdminCredential()}` },
     });
     expect(response.body).not.toContain('suas:suas');
     expect(response.body).not.toContain('DATABASE_URL');
+    expect(response.body).not.toContain(TEST_SESSION_SECRET);
   });
 
-  it('is not registered in PRODUCTION, where admin authorization does not yet exist', async () => {
-    const config = { ...loadConfig(validEnv()), environment: 'PRODUCTION' as const };
-    const server = createServer({
-      config,
-      buildInfo: () => buildInfo({ config, schemaVersion: 1, expectedSchemaVersion: 1, env: {} }),
+  // Slice 1 left this route unauthenticated and simply unregistered in
+  // PRODUCTION. Slice 3 supplies the admin authorization it was waiting for.
+  it('refuses an unauthenticated request', async () => {
+    const response = await app.server.inject({
+      method: 'GET',
+      url: '/api/v0/admin/build-info',
     });
-    const response = await server.inject({ method: 'GET', url: '/api/v0/admin/build-info' });
-    expect(response.statusCode).toBe(404);
-    await server.close();
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('refuses a signed-in user who is not a SUAS admin', async () => {
+    const response = await app.server.inject({
+      method: 'GET',
+      url: '/api/v0/admin/build-info',
+      headers: { authorization: `Bearer ${await plainCredential()}` },
+    });
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('FORBIDDEN');
+  });
+
+  it('refuses a SUAS admin whose session is not MFA-elevated', async () => {
+    const response = await app.server.inject({
+      method: 'GET',
+      url: '/api/v0/admin/build-info',
+      headers: { authorization: `Bearer ${await elevatedAdminCredential(false)}` },
+    });
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('MFA_REQUIRED');
   });
 });
 

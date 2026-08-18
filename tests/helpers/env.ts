@@ -27,9 +27,13 @@ export function validEnv(overrides: ConfigSource = {}): ConfigSource {
     SUAS_SUPPORT_SIGNAL_MODE: 'fixture',
     SUAS_SAFETY_COPY_MODE: 'placeholder_test_only',
     SUAS_SENSITIVE_AGGREGATE_REPORTING: 'disabled',
+    SUAS_SESSION_SECRET: 'test-session-secret-please-do-not-use-outside-tests',
     ...overrides,
   };
 }
+
+/** Synthetic session secret used by the suite. Never a real secret. */
+export const TEST_SESSION_SECRET = 'test-session-secret-please-do-not-use-outside-tests';
 
 /** Database URL for integration tests, pinned to the synthetic test database. */
 export function testDatabaseUrl(): string {

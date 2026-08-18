@@ -16,6 +16,12 @@ import type { Pool } from 'pg';
 import { describeConfig, loadConfig, type ConfigSource, type SuasConfig } from './config/index.js';
 import { createPool, EXPECTED_SCHEMA_VERSION, runMigrations } from './db/index.js';
 import { createJobQueue, type DurableJobQueuePort } from './jobs/index.js';
+import {
+  createChallengeDelivery,
+  createMfaPort,
+  type ChallengeDeliveryPort,
+  type MfaPort,
+} from './auth/index.js';
 import { createServer } from './http/server.js';
 import { buildInfo, type BuildInfo } from './provenance/build-info.js';
 import { RELEASE_MANIFEST, SPEC_VERSION } from './release/pins.js';
@@ -25,6 +31,8 @@ export interface StartedApp {
   readonly server: FastifyInstance;
   readonly pool: Pool | undefined;
   readonly jobQueue: DurableJobQueuePort;
+  readonly challengeDelivery: ChallengeDeliveryPort;
+  readonly mfa: MfaPort;
   readonly buildInfo: BuildInfo;
   close(): Promise<void>;
 }
@@ -64,7 +72,14 @@ export async function startApp(options: StartAppOptions): Promise<StartedApp> {
   // 3. Durable async-work seam.
   const jobQueue = createJobQueue(config);
 
-  // 4. Build provenance.
+  // 4. Authentication capability ports. Neither contacts a real provider: the
+  // delivery port reports a disabled channel as unavailable rather than faking a
+  // send (AUTH.md §9), and the MFA factor is a test factor that PRODUCTION
+  // refuses outright (AUTH.md §4).
+  const challengeDelivery = createChallengeDelivery(config);
+  const mfa = createMfaPort(config);
+
+  // 5. Build provenance.
   const resolveBuildInfo = (): BuildInfo =>
     buildInfo({
       config,
@@ -73,8 +88,14 @@ export async function startApp(options: StartAppOptions): Promise<StartedApp> {
       env: options.env,
     });
 
-  // 5. HTTP surface.
-  const server = createServer({ config, buildInfo: resolveBuildInfo });
+  // 6. HTTP surface.
+  const server = createServer({
+    config,
+    buildInfo: resolveBuildInfo,
+    ...(pool !== undefined ? { pool } : {}),
+    challengeDelivery,
+    mfa,
+  });
 
   if (options.listen !== false) {
     await server.listen({ host: config.http.host, port: config.http.port });
@@ -89,6 +110,8 @@ export async function startApp(options: StartAppOptions): Promise<StartedApp> {
     server,
     pool,
     jobQueue,
+    challengeDelivery,
+    mfa,
     buildInfo: resolveBuildInfo(),
     close: async () => {
       await server.close();

@@ -23,10 +23,14 @@ Requirements: Node.js 22+ and a reachable PostgreSQL 17 instance.
 ```bash
 npm ci
 cp .env.example .env
+echo "SUAS_SESSION_SECRET=$(openssl rand -hex 32)" >> .env
 createdb suas_local
 npm run migrate -- apply
 npm run dev
 ```
+
+`SUAS_SESSION_SECRET` is required in every environment class and startup fails
+closed without it. It ships empty in `.env.example` and must never be committed.
 
 Commands:
 
@@ -54,10 +58,17 @@ createdb suas_migrations_test
 migration-harness tests rebuild a schema from empty, so they own `suas_migrations_test`
 separately. Override either with `TEST_DATABASE_URL` and `TEST_MIGRATIONS_DATABASE_URL`.
 
-HTTP surface in this slice:
+HTTP surface so far:
 
-- `GET /api/v0/health` — liveness only.
-- `GET /api/v0/admin/build-info` — build provenance. Not registered in `PRODUCTION`; admin authorization arrives in Slice 3.
+| Endpoint                                           | Authorization                         |
+| -------------------------------------------------- | ------------------------------------- |
+| `GET /api/v0/health`                               | none; liveness only                   |
+| `POST /api/v0/auth/challenges`                     | none; issues a passwordless challenge |
+| `POST /api/v0/auth/challenges/commands/verify`     | none; exchanges a code for a session  |
+| `POST /api/v0/auth/mfa/challenges`                 | session                               |
+| `POST /api/v0/auth/mfa/challenges/commands/verify` | session; elevates it                  |
+| `POST /api/v0/auth/sessions/commands/logout`       | session                               |
+| `GET /api/v0/admin/build-info`                     | SUAS admin, MFA-elevated              |
 
 ## Environment
 

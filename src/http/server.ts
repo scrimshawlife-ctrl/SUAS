@@ -3,39 +3,46 @@
  *
  * Spec citations:
  * - SUAS-specs API.md §2 (`/api/v0` is the sole canonical v0 version selector)
+ * - SUAS-specs API.md §4 (authenticated session required unless documented
+ *   otherwise; authorization is role + tenant + row + consent/system basis)
  * - SUAS-specs API.md §6 (canonical error body shape)
  * - SUAS-specs API.md §8 / ARCHITECTURE.md §14 (request correlation without PII)
  * - SUAS-specs ENVIRONMENT.md §8 (build-info surface without secrets or veteran PII)
  *
- * Slice 1 exposes liveness and build provenance only. Product endpoints arrive
- * with the slices that own them.
+ * Product endpoints arrive with the slices that own them.
  */
 
 import { randomUUID } from 'node:crypto';
 import Fastify, { type FastifyError, type FastifyInstance } from 'fastify';
+import type { Pool } from 'pg';
+import { ZodError } from 'zod';
 import type { SuasConfig } from '../config/index.js';
 import { API_PREFIX } from '../release/pins.js';
 import type { BuildInfo } from '../provenance/build-info.js';
+import type { ChallengeDeliveryPort, MfaPort } from '../auth/index.js';
+import { assertMfaElevated, assertSuasAdmin } from '../authz/index.js';
+import { authenticate } from './authenticate.js';
+import { registerAuthRoutes } from './routes/auth.js';
 
 export interface ServerDependencies {
   readonly config: SuasConfig;
   /** Resolved per request so schema version reflects current state. */
   readonly buildInfo: () => BuildInfo;
-}
-
-/**
- * Build-info is an admin/debug surface (ENVIRONMENT.md §8). Admin authorization
- * does not exist until SPEC017_PLAN.md Slice 3, so the route is registered only
- * in the synthetic environment classes and stays unavailable in PRODUCTION rather
- * than being exposed unauthenticated.
- */
-function buildInfoRouteAllowed(config: SuasConfig): boolean {
-  return config.environment !== 'PRODUCTION';
+  /** Persistence. Absent when the process runs without a database. */
+  readonly pool?: Pool;
+  readonly challengeDelivery?: ChallengeDeliveryPort;
+  readonly mfa?: MfaPort;
 }
 
 /** Errors that declare a released API error code and HTTP status. API.md §6. */
 function asDomainError(error: unknown): { code: string; httpStatus: number } | undefined {
   if (typeof error !== 'object' || error === null) return undefined;
+
+  // API.md §6: a malformed request body is 400, not an internal failure.
+  if (error instanceof ZodError) {
+    return { code: 'VALIDATION_FAILED', httpStatus: 400 };
+  }
+
   const candidate = error as { code?: unknown; httpStatus?: unknown };
   return typeof candidate.code === 'string' && typeof candidate.httpStatus === 'number'
     ? { code: candidate.code, httpStatus: candidate.httpStatus }
@@ -107,8 +114,25 @@ export function createServer(deps: ServerDependencies): FastifyInstance {
     return { status: 'ok' };
   });
 
-  if (buildInfoRouteAllowed(deps.config)) {
-    app.get(`${API_PREFIX}/admin/build-info`, () => deps.buildInfo());
+  const pool = deps.pool;
+  if (pool !== undefined && deps.challengeDelivery !== undefined && deps.mfa !== undefined) {
+    registerAuthRoutes(app, {
+      pool,
+      sessionSecret: deps.config.sessionSecret,
+      delivery: deps.challengeDelivery,
+      mfa: deps.mfa,
+    });
+
+    // ENVIRONMENT.md §8 allows provenance on an admin/debug surface. Slice 3
+    // supplies the admin authorization that Slice 1 lacked, so the route is now
+    // registered in every environment class and gated on the SUAS-admin role with
+    // an MFA-elevated session (AUTH.md §4; ADMIN.md §2; SECURITY.md §2).
+    app.get(`${API_PREFIX}/admin/build-info`, async (request) => {
+      const context = await authenticate(pool, deps.config.sessionSecret, request);
+      assertSuasAdmin(context);
+      assertMfaElevated(context, 'Reading build info');
+      return deps.buildInfo();
+    });
   }
 
   return app;

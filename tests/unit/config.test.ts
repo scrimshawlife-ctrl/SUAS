@@ -197,10 +197,13 @@ describe('ENVIRONMENT.md §6 — secret handling', () => {
     expect(issues.join('\n')).toContain('at least 32 characters');
   });
 
-  it('requires a session secret in STAGING', () => {
-    const issues = issuesFor(validEnv({ SUAS_ENV: 'STAGING' }));
-    expect(issues.join('\n')).toContain('SUAS_SESSION_SECRET is required in STAGING');
-  });
+  it.each(['LOCAL', 'TEST', 'STAGING'])(
+    'requires a session secret in %s, because authentication is an enabled capability',
+    (environment) => {
+      const issues = issuesFor(validEnv({ SUAS_ENV: environment, SUAS_SESSION_SECRET: undefined }));
+      expect(issues.join('\n')).toContain(`SUAS_SESSION_SECRET is required in ${environment}`);
+    },
+  );
 
   it('never includes secret values in the redacted description', () => {
     const config = loadConfig(validEnv({ SUAS_SESSION_SECRET: STRONG_SECRET }));

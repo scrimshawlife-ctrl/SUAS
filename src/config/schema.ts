@@ -385,23 +385,25 @@ export const configSchema = rawConfigSchema.superRefine((raw, ctx) => {
     }
   }
 
-  // ENVIRONMENT.md §6: session secrets are a secret class. Reject weak material
-  // wherever one is supplied; require one where sessions are operationally shared.
-  if (raw.SUAS_SESSION_SECRET !== undefined) {
-    if (raw.SUAS_SESSION_SECRET.length < MIN_SESSION_SECRET_LENGTH) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          `SUAS_SESSION_SECRET must be at least ${MIN_SESSION_SECRET_LENGTH} characters ` +
-          `(ENVIRONMENT.md §6 secret classes).`,
-      });
-    }
-  } else if (environment === 'STAGING' || environment === 'PRODUCTION') {
+  // ENVIRONMENT.md §5 "required secrets are absent for an enabled capability".
+  // Authentication became an enabled capability in SPEC017_PLAN.md Slice 3, and it
+  // keys challenge and session credential hashing, so the secret is now required
+  // in every environment class rather than only where sessions are shared.
+  if (raw.SUAS_SESSION_SECRET === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message:
-        `SUAS_SESSION_SECRET is required in ${environment}; it must come from environment or ` +
-        `platform secret storage, never a committed file (ENVIRONMENT.md §3 "Auth / sessions", §6).`,
+        `SUAS_SESSION_SECRET is required in ${environment}: authentication is an enabled ` +
+        `capability and it keys challenge and session credential hashing. It must come from ` +
+        `environment or platform secret storage, never a committed file ` +
+        `(ENVIRONMENT.md §3 "Auth / sessions", §5, §6).`,
+    });
+  } else if (raw.SUAS_SESSION_SECRET.length < MIN_SESSION_SECRET_LENGTH) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        `SUAS_SESSION_SECRET must be at least ${MIN_SESSION_SECRET_LENGTH} characters ` +
+        `(ENVIRONMENT.md §6 secret classes).`,
     });
   }
 });
