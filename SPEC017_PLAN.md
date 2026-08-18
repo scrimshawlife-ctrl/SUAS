@@ -1,9 +1,28 @@
 # SPEC017_PLAN.md — Implementation conformance plan for SUAS v0.1.1
 
 **Released spec:** `0.1.1`  
-**Status:** `READY_TO_BEGIN`  
+**Status:** `IN_PROGRESS`  
 **Implementation repository:** `scrimshawlife-ctrl/SUAS`  
 **Canonical specs:** `scrimshawlife-ctrl/SUAS-specs`
+
+## Progress
+
+| Slice                                   | Status        | Record                                                                   |
+| --------------------------------------- | ------------- | ------------------------------------------------------------------------ |
+| 1 — Foundation                          | `IMPLEMENTED` | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md) |
+| 2 — Event/idempotency kernel            | `NOT_STARTED` | —                                                                        |
+| 3 — Identity / tenancy / authorization  | `NOT_STARTED` | —                                                                        |
+| 4 — Consent and privacy kernel          | `NOT_STARTED` | —                                                                        |
+| 5 — Coordination kernel                 | `NOT_STARTED` | —                                                                        |
+| 6 — Follow-Up / Settlement              | `NOT_STARTED` | —                                                                        |
+| 7 — Resources / fulfillment             | `NOT_STARTED` | —                                                                        |
+| 8 — Notifications                       | `NOT_STARTED` | —                                                                        |
+| 9 — Check-In / Support Signal interface | `NOT_STARTED` | —                                                                        |
+| 10 — MVP-reference UI                   | `NOT_STARTED` | —                                                                        |
+| 11 — Scale / resilience harness         | `NOT_STARTED` | —                                                                        |
+
+Slice 1 returned seven semantic/mechanism questions to specs; see §9 of its record.
+No readiness gate has advanced, and production remains blocked until SPEC-018.
 
 ## Objective
 

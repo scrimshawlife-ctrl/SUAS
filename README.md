@@ -16,6 +16,40 @@ Canonical released specs:
 - pilot readiness: `NOT_READY`
 - production readiness: `NOT_READY`
 
+## Local development
+
+Requirements: Node.js 22+ and a reachable PostgreSQL 17 instance.
+
+```bash
+npm ci
+cp .env.example .env
+createdb suas_local
+npm run migrate -- apply
+npm run dev
+```
+
+Commands:
+
+| Command                       | Purpose                                                |
+| ----------------------------- | ------------------------------------------------------ |
+| `npm run verify`              | format check, lint, typecheck, and the full test suite |
+| `npm run build`               | compile to `dist/`                                     |
+| `npm start`                   | run the compiled build                                 |
+| `npm run dev`                 | run from source with reload                            |
+| `npm test`                    | full suite (integration tests need PostgreSQL)         |
+| `npm run test:unit`           | unit tests only, no database required                  |
+| `npm run migrate -- status`   | applied, pending, drifted, and orphaned migrations     |
+| `npm run migrate -- apply`    | apply pending migrations under an advisory lock        |
+| `npm run migrate -- validate` | verify schema state without mutating it                |
+| `npm run provenance`          | print the build-info object                            |
+
+Integration tests expect a `suas_test` database; override with `TEST_DATABASE_URL`.
+
+HTTP surface in this slice:
+
+- `GET /api/v0/health` — liveness only.
+- `GET /api/v0/admin/build-info` — build provenance. Not registered in `PRODUCTION`; admin authorization arrives in Slice 3.
+
 ## Environment
 
 `.env.example` maps the released [SUAS-specs `ENVIRONMENT.md`](https://github.com/scrimshawlife-ctrl/SUAS-specs/blob/main/ENVIRONMENT.md) contract.
