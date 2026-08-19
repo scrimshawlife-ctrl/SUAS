@@ -16,12 +16,12 @@
 | 5 — Coordination kernel                 | `IMPLEMENTED`                | [docs/slices/SLICE_05_COORDINATION.md](docs/slices/SLICE_05_COORDINATION.md)                   |
 | 6 — Follow-Up / Settlement              | `IMPLEMENTED`                | [docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md](docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md)     |
 | 7 — Resources / fulfillment             | `IMPLEMENTED (manual paths)` | [docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md](docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md) |
-| 8 — Notifications                       | `NOT_STARTED`                | —                                                                                              |
+| 8 — Notifications                       | `IMPLEMENTED`                | [docs/slices/SLICE_08_NOTIFICATIONS.md](docs/slices/SLICE_08_NOTIFICATIONS.md)                 |
 | 9 — Check-In / Support Signal interface | `NOT_STARTED`                | —                                                                                              |
 | 10 — MVP-reference UI                   | `NOT_STARTED`                | —                                                                                              |
 | 11 — Scale / resilience harness         | `NOT_STARTED`                | —                                                                                              |
 
-Slices 1-7 returned fifty semantic/mechanism questions to specs; see the gaps section
+Slices 1-8 returned fifty-six semantic/mechanism questions to specs; see the gaps section
 of each record. Each slice has closed the seam the previous one left, except one.
 No readiness gate has advanced, and production remains blocked until SPEC-018.
 

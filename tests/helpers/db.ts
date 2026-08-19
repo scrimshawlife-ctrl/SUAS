@@ -23,7 +23,8 @@ export async function resetKernelTables(pool: Pool): Promise<void> {
   await pool.query(`
     TRUNCATE processed_events, event_outbox, command_idempotency_records, audit_events,
              domain_events, consent_events, consent_grants, trusted_contacts,
-             consent_template_versions, provider_webhook_deliveries, service_fulfillments,
+             consent_template_versions, notification_delivery_callbacks, notifications,
+             notification_preferences, provider_webhook_deliveries, service_fulfillments,
              fulfillment_attempts, referrals, resources, provider_adapter_configurations,
              service_providers, follow_ups, settlements, service_requests,
              contact_attempts, case_notes, case_assignments, support_cases,
