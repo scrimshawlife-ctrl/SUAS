@@ -78,8 +78,8 @@ const UNROUTABLE_HEALTH: readonly AdapterHealth[] = ['UNAVAILABLE', 'MISCONFIGUR
 /**
  * Adapters available to this process, keyed by opaque adapter id.
  *
- * Registration is explicit and environment-owned: v0.1.1 authorizes only manual
- * and fake implementations (ENVIRONMENT.md §3), so nothing here can name a vendor.
+ * Registration is explicit and environment-owned. Provider-specific implementations
+ * are composed above this provider-neutral registry and never alter domain semantics.
  */
 export class AdapterRegistry {
   private readonly adapters = new Map<string, FulfillmentAdapter>();

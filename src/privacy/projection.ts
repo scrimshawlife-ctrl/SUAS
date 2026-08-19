@@ -62,7 +62,7 @@ export class ProjectionContractUnavailableError extends Error {
     super(
       `No released disclosure projection contract exists for capability "${capability}". ` +
         `PROVIDER_INTEGRATIONS.md §13 requires the capability contract to identify each ` +
-        `disclosed field and its Consent Grant purpose; v0.1.1 does not define them, so no ` +
+        `disclosed field and its Consent Grant purpose; the selected release does not define them for this capability, so no ` +
         `provider disclosure can be built.`,
     );
     this.name = 'ProjectionContractUnavailableError';
@@ -96,8 +96,8 @@ export interface ProjectionContract {
 /**
  * Registered contracts, keyed by capability.
  *
- * Deliberately empty: v0.1.1 releases no per-capability field list. Slice 7
- * registers contracts once they exist, and the registry rejects any contract
+ * Released contracts are installed below. Other capabilities remain absent until
+ * their release defines an allow-list, and the registry rejects any contract
  * naming a forbidden category.
  */
 export const TRANSPORTATION_PROJECTION_CONTRACT: ProjectionContract = {

@@ -11,10 +11,10 @@
  * - SUAS-specs ADMIN.md §3 ("Manual Adapter paths remain first-class and visible
  *   as configuration, not as a failure mode")
  * - SUAS-specs ENVIRONMENT.md §3 (adapter modes are manual/fake/disabled in
- *   v0.1.1; a real adapter needs D-017–D-020)
+ *   v0.1.2; real adapters require their corresponding released D-017–D-020 decision)
  *
- * These are the only adapters v0.1.1 authorizes. No real vendor adapter exists,
- * and the configuration schema cannot name one.
+ * Manual and fake adapters remain first-class in v0.1.2. D-017 additionally
+ * authorizes the adapter-local Uber transportation implementation.
  */
 
 import type { ServiceCategory } from '../coordination/index.js';

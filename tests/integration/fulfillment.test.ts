@@ -289,7 +289,7 @@ describe('PROVIDER_INTEGRATIONS.md §13 — disclosure is gated before any adapt
     await configureAdapter(tenantId, 'fake', { mode: 'API' });
     await grantFulfillmentConsent(tenantId, veteran.userId, 'fake');
 
-    // Test-only contract: v0.1.1 releases none, so this stands in for one.
+    // Test-only override exercises the generic registry independently of the released contract.
     registerProjectionContract({
       capability: 'TRANSPORTATION',
       allowedFields: ['service_request_id', 'pickup_address'],

@@ -1,7 +1,7 @@
 # AGENTS.md — SUAS implementation rules
 
-Released stack: `0.1.1`  
-Manifest: `RELEASE_MANIFEST-0.1.1.md` in `SUAS-specs`  
+Released stack: `0.1.2`  
+Manifest: `RELEASE_MANIFEST-0.1.2.md` in `SUAS-specs`  
 Authority: `RELEASED_FOR_IMPLEMENTATION`  
 Stage: `SPEC-017`
 
