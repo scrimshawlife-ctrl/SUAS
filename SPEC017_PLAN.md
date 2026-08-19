@@ -7,24 +7,26 @@
 
 ## Progress
 
-| Slice                                   | Status        | Record                                                                                 |
-| --------------------------------------- | ------------- | -------------------------------------------------------------------------------------- |
-| 1 — Foundation                          | `IMPLEMENTED` | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md)               |
-| 2 — Event/idempotency kernel            | `IMPLEMENTED` | [docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md](docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md) |
-| 3 — Identity / tenancy / authorization  | `IMPLEMENTED` | [docs/slices/SLICE_03_IDENTITY_TENANCY.md](docs/slices/SLICE_03_IDENTITY_TENANCY.md)   |
-| 4 — Consent and privacy kernel          | `IMPLEMENTED` | [docs/slices/SLICE_04_CONSENT_PRIVACY.md](docs/slices/SLICE_04_CONSENT_PRIVACY.md)     |
-| 5 — Coordination kernel                 | `IMPLEMENTED` | [docs/slices/SLICE_05_COORDINATION.md](docs/slices/SLICE_05_COORDINATION.md)           |
-| 6 — Follow-Up / Settlement              | `NOT_STARTED` | —                                                                                      |
-| 7 — Resources / fulfillment             | `NOT_STARTED` | —                                                                                      |
-| 8 — Notifications                       | `NOT_STARTED` | —                                                                                      |
-| 9 — Check-In / Support Signal interface | `NOT_STARTED` | —                                                                                      |
-| 10 — MVP-reference UI                   | `NOT_STARTED` | —                                                                                      |
-| 11 — Scale / resilience harness         | `NOT_STARTED` | —                                                                                      |
+| Slice                                   | Status        | Record                                                                                     |
+| --------------------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
+| 1 — Foundation                          | `IMPLEMENTED` | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md)                   |
+| 2 — Event/idempotency kernel            | `IMPLEMENTED` | [docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md](docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md)     |
+| 3 — Identity / tenancy / authorization  | `IMPLEMENTED` | [docs/slices/SLICE_03_IDENTITY_TENANCY.md](docs/slices/SLICE_03_IDENTITY_TENANCY.md)       |
+| 4 — Consent and privacy kernel          | `IMPLEMENTED` | [docs/slices/SLICE_04_CONSENT_PRIVACY.md](docs/slices/SLICE_04_CONSENT_PRIVACY.md)         |
+| 5 — Coordination kernel                 | `IMPLEMENTED` | [docs/slices/SLICE_05_COORDINATION.md](docs/slices/SLICE_05_COORDINATION.md)               |
+| 6 — Follow-Up / Settlement              | `IMPLEMENTED` | [docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md](docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md) |
+| 7 — Resources / fulfillment             | `NOT_STARTED` | —                                                                                          |
+| 8 — Notifications                       | `NOT_STARTED` | —                                                                                          |
+| 9 — Check-In / Support Signal interface | `NOT_STARTED` | —                                                                                          |
+| 10 — MVP-reference UI                   | `NOT_STARTED` | —                                                                                          |
+| 11 — Scale / resilience harness         | `NOT_STARTED` | —                                                                                          |
 
-Slices 1-5 returned thirty-six semantic/mechanism questions to specs; see the gaps
-section of each record. Slice 3 closed one of Slice 1's, Slice 4 closed Slice 3's
-consent seam, and Slice 5 closed Slice 4's responder-assignment seam. No readiness
-gate has advanced, and production remains blocked until SPEC-018.
+Slices 1-6 returned forty-three semantic/mechanism questions to specs; see the gaps
+section of each record. Each slice has closed the seam the previous one left: Slice 3
+closed Slice 1's admin-authorization gap, Slice 4 closed Slice 3's consent seam,
+Slice 5 closed Slice 4's responder-assignment seam, and Slice 6 closed Slice 5's
+Settlement seam. No readiness gate has advanced, and production remains blocked
+until SPEC-018.
 
 The most consequential open gap is Slice 4 §10 item 1: v0.1.1 releases no
 per-capability provider disclosure projection, so Slice 7 cannot build a real

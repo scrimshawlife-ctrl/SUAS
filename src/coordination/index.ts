@@ -43,8 +43,6 @@ export {
   NoActiveAssignmentError,
   NotAssignedResponderError,
   openCase,
-  resolveCase,
-  SettlementRequiredError,
   type AssignCaseInput,
   type AssignmentResult,
   type CaseAssignment,
@@ -52,8 +50,6 @@ export {
   type ClaimCaseInput,
   type OpenCaseInput,
   type OpenCaseResult,
-  type ResolveCaseInput,
-  type SettlementVerifier,
   type SupportCase,
 } from './cases.js';
 export {

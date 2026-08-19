@@ -15,16 +15,14 @@ import { listAggregateEvents } from '../../src/events/index.js';
 import {
   addCaseNote,
   assignCase,
-  BlockingWorkError,
   claimCase,
   ContactOutcomeRequiredError,
-  createAssignmentVerifier,
   createServiceRequest,
+  createAssignmentVerifier,
   DisclosureGuardRequiredError,
   executeCaseCommand,
   executeServiceRequestCommand,
   findActiveAssignment,
-  findCase,
   IllegalCaseTransitionError,
   listContactAttempts,
   NoActiveAssignmentError,
@@ -32,8 +30,6 @@ import {
   openCase,
   readCaseQueue,
   recordContact,
-  resolveCase,
-  SettlementRequiredError,
   StaleCaseStateError,
 } from '../../src/coordination/index.js';
 import { createUser } from '../../src/identity/index.js';
@@ -368,101 +364,6 @@ describe('CASES.md §4.1 — unassigned cases cannot use assigned-responder edge
         actorType: 'RESPONDER',
       }),
     ).rejects.toThrow(NotAssignedResponderError);
-  });
-});
-
-describe('CASES.md §7 — resolution requires a Settlement', () => {
-  async function activeCase() {
-    const context = await scenario();
-    await claimCase(pool, {
-      tenantId: context.tenantId,
-      caseId: context.supportCase.caseId,
-      responderUserId: context.responder.userId,
-    });
-    await executeCaseCommand(pool, {
-      tenantId: context.tenantId,
-      caseId: context.supportCase.caseId,
-      command: 'ACTIVATE',
-      actorId: context.responder.userId,
-      actorType: 'RESPONDER',
-    });
-    return context;
-  }
-
-  it('refuses to resolve while Settlement does not exist', async () => {
-    const { tenantId, responder, supportCase } = await activeCase();
-    await expect(
-      resolveCase(pool, { tenantId, caseId: supportCase.caseId, actorId: responder.userId }),
-    ).rejects.toThrow(SettlementRequiredError);
-
-    expect((await findCase(pool, tenantId, supportCase.caseId))?.status).toBe('ACTIVE');
-  });
-
-  it('refuses to resolve when the verifier reports no Settlement', async () => {
-    const { tenantId, responder, supportCase } = await activeCase();
-    await expect(
-      resolveCase(
-        pool,
-        { tenantId, caseId: supportCase.caseId, actorId: responder.userId },
-        { verifySettlement: () => Promise.resolve(false) },
-      ),
-    ).rejects.toThrow(SettlementRequiredError);
-  });
-
-  it('refuses to resolve while a non-terminal Service Request remains', async () => {
-    const { tenantId, responder, supportCase } = await activeCase();
-    await withTransaction(pool, (tx) =>
-      createServiceRequest(tx, {
-        tenantId,
-        caseId: supportCase.caseId,
-        category: 'FOOD',
-        createdBy: responder.userId,
-        actorType: 'RESPONDER',
-      }),
-    );
-
-    await expect(
-      resolveCase(
-        pool,
-        { tenantId, caseId: supportCase.caseId, actorId: responder.userId },
-        { verifySettlement: () => Promise.resolve(true) },
-      ),
-    ).rejects.toThrow(BlockingWorkError);
-  });
-
-  it('resolves once blocking work is terminal and a Settlement exists', async () => {
-    const { tenantId, responder, supportCase } = await activeCase();
-    const request = await withTransaction(pool, (tx) =>
-      createServiceRequest(tx, {
-        tenantId,
-        caseId: supportCase.caseId,
-        category: 'FOOD',
-        createdBy: responder.userId,
-        actorType: 'RESPONDER',
-      }),
-    );
-    await executeServiceRequestCommand(pool, {
-      tenantId,
-      serviceRequestId: request.serviceRequestId,
-      command: 'CANCEL',
-      actorId: responder.userId,
-      actorType: 'RESPONDER',
-      reason: 'veteran no longer needs it',
-    });
-
-    const resolved = await resolveCase(
-      pool,
-      { tenantId, caseId: supportCase.caseId, actorId: responder.userId },
-      { verifySettlement: () => Promise.resolve(true) },
-    );
-    expect(resolved.status).toBe('RESOLVED');
-
-    const events = await listAggregateEvents(pool, {
-      tenantId,
-      aggregateType: 'SupportCase',
-      aggregateId: supportCase.caseId,
-    });
-    expect(events.filter((event) => event.eventType === 'CASE_RESOLVED')).toHaveLength(1);
   });
 });
 
