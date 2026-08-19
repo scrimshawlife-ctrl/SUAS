@@ -26,7 +26,6 @@ import {
   type CaseCommand,
   type CaseStatus,
 } from './case-transitions.js';
-import { TERMINAL_REQUEST_STATUSES } from './request-transitions.js';
 
 export interface SupportCase {
   readonly caseId: string;
@@ -101,22 +100,6 @@ export class CaseAlreadyClaimedError extends Error {
   constructor() {
     super('This case already has an active assignment.');
     this.name = 'CaseAlreadyClaimedError';
-  }
-}
-
-/**
- * CASES.md §7: `RESOLVED` requires a Settlement.
- *
- * Settlement is SPEC017_PLAN.md Slice 6, so no settlement can exist yet and
- * resolve fails closed rather than resolving a case with nothing settled.
- */
-export class SettlementRequiredError extends Error {
-  readonly code = 'UNPROCESSABLE';
-  readonly httpStatus = 422;
-
-  constructor(detail: string) {
-    super(`This case cannot be resolved: ${detail} (SUAS-specs CASES.md §7).`);
-    this.name = 'SettlementRequiredError';
   }
 }
 
@@ -453,6 +436,24 @@ export async function executeCaseCommand(
       }
     }
 
+    // Closing ends the case cycle, so ownership ends with it. Otherwise a
+    // reopened case would return to OPEN still owned by the previous responder,
+    // and could never be claimed for the new cycle — CASES.md §4 has no
+    // OPEN-with-active-assignment state. The assignment row is retained as
+    // history (§7: closure retains all history). The released text does not say
+    // this outright; see the Slice 6 conformance record.
+    if (input.command === 'CLOSE') {
+      const active = await findActiveAssignment(tx, input.caseId);
+      if (active !== undefined) {
+        await tx.query(
+          `UPDATE case_assignments
+             SET status = 'RELEASED', released_at = now(), release_reason = 'CASE_CLOSED'
+           WHERE case_assignment_id = $1`,
+          [active.caseAssignmentId],
+        );
+      }
+    }
+
     const updated = await setCaseStatus(tx, input.tenantId, input.caseId, transition.to);
 
     if (input.command === 'ESCALATE') {
@@ -493,78 +494,6 @@ export class NotAssignedResponderError extends Error {
     super('This action is reserved for the responder currently assigned to the case.');
     this.name = 'NotAssignedResponderError';
   }
-}
-
-/**
- * Confirms a settlement exists for the resolution cycle.
- * Supplied by SPEC017_PLAN.md Slice 6; absent until then, so resolve fails.
- */
-export type SettlementVerifier = (params: { tenantId: string; caseId: string }) => Promise<boolean>;
-
-export interface ResolveCaseInput {
-  readonly tenantId: string;
-  readonly caseId: string;
-  readonly actorId: string;
-  readonly expectedStatus?: CaseStatus;
-  readonly correlationId?: string;
-}
-
-/**
- * `RESOLVE`. CASES.md §4 and §7 require a Settlement and no blocking
- * non-terminal Service Requests.
- *
- * Without a settlement verifier there is no way to establish that a Settlement
- * exists, so this refuses. That is the intended behavior until Slice 6 lands:
- * resolving a case with nothing settled would be worse than refusing.
- */
-export async function resolveCase(
-  pool: Pool,
-  input: ResolveCaseInput,
-  deps: { verifySettlement?: SettlementVerifier } = {},
-): Promise<SupportCase> {
-  return withTransaction(pool, async (tx) => {
-    const supportCase = await lockCase(tx, input.tenantId, input.caseId, input.expectedStatus);
-    const transition = resolveCaseTransition('RESOLVE', supportCase.status);
-
-    const assignment = await findActiveAssignment(tx, input.caseId);
-    if (assignment === undefined) {
-      throw new NoActiveAssignmentError('RESOLVE');
-    }
-
-    const blocking = await tx.query<{ count: string }>(
-      `SELECT count(*)::text AS count FROM service_requests
-       WHERE case_id = $1 AND status <> ALL($2::suas_service_request_status[])`,
-      [input.caseId, TERMINAL_REQUEST_STATUSES],
-    );
-    const blockingCount = Number.parseInt(blocking.rows[0]?.count ?? '0', 10);
-    if (blockingCount > 0) {
-      throw new BlockingWorkError(blockingCount);
-    }
-
-    if (deps.verifySettlement === undefined) {
-      throw new SettlementRequiredError(
-        'Settlement is not implemented until SPEC017_PLAN.md Slice 6, so no Settlement can exist',
-      );
-    }
-    if (!(await deps.verifySettlement({ tenantId: input.tenantId, caseId: input.caseId }))) {
-      throw new SettlementRequiredError('no Settlement exists for this resolution cycle');
-    }
-
-    const updated = await setCaseStatus(tx, input.tenantId, input.caseId, transition.to);
-
-    await appendDomainEvent(tx, {
-      eventType: 'CASE_RESOLVED',
-      aggregateType: 'SupportCase',
-      aggregateId: input.caseId,
-      tenantId: input.tenantId,
-      actorType: 'RESPONDER',
-      actorId: input.actorId,
-      payload: { case_assignment_id: assignment.caseAssignmentId },
-      ...(input.correlationId !== undefined ? { correlationId: input.correlationId } : {}),
-    });
-
-    return updated;
-  });
 }
 
 /**
