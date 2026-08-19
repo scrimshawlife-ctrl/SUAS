@@ -46,11 +46,7 @@ import {
   veteranVisibleResource,
   verifyResource,
 } from '../../src/fulfillment/index.js';
-import {
-  clearProjectionContracts,
-  ProjectionContractUnavailableError,
-  registerProjectionContract,
-} from '../../src/privacy/index.js';
+import { clearProjectionContracts, registerProjectionContract } from '../../src/privacy/index.js';
 import {
   consentTemplateVersionKey,
   createConsentTemplateVersion,
@@ -262,7 +258,7 @@ describe('PROVIDER_INTEGRATIONS.md §13 — disclosure is gated before any adapt
     expect(await listAttempts(pool, tenantId, request.serviceRequestId)).toEqual([]);
   });
 
-  it('refuses a consented transmitting adapter while no released projection exists', async () => {
+  it('uses the released transportation projection for a consented adapter', async () => {
     const { tenantId, veteran, responder, caseId, request } = await requestScenario();
     await configureAdapter(tenantId, 'fake', { mode: 'API' });
     await grantFulfillmentConsent(tenantId, veteran.userId, 'fake');
@@ -271,19 +267,21 @@ describe('PROVIDER_INTEGRATIONS.md §13 — disclosure is gated before any adapt
     const registry = new AdapterRegistry();
     registry.register(adapter);
 
-    // Consent allows it; the missing capability contract still stops it.
-    await expect(
-      initiateFulfillment(pool, registry, {
-        tenantId,
-        serviceRequestId: request.serviceRequestId,
-        caseId,
-        veteranUserId: veteran.userId,
-        capability: 'TRANSPORTATION',
-        actorId: responder.userId,
-        disclosureSource: { pickup_address: '1 Test St' },
-      }),
-    ).rejects.toThrow(ProjectionContractUnavailableError);
-    expect(adapter.received()).toEqual([]);
+    const result = await initiateFulfillment(pool, registry, {
+      tenantId,
+      serviceRequestId: request.serviceRequestId,
+      caseId,
+      veteranUserId: veteran.userId,
+      capability: 'TRANSPORTATION',
+      actorId: responder.userId,
+      disclosureSource: {
+        rider: { firstName: 'Synthetic', lastName: 'Rider', phoneNumber: '+15555550100' },
+        pickup: { latitude: 37.775, longitude: -122.418 },
+        dropoff: { latitude: 37.785, longitude: -122.408 },
+      },
+    });
+    expect(result.outcome.status).toBe('PROVIDER_ACCEPTED');
+    expect(adapter.disclosedFields()).toEqual(['dropoff', 'pickup', 'rider']);
   });
 
   it('discloses only contracted fields once a contract is registered', async () => {

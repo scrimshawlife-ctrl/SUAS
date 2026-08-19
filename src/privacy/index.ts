@@ -7,6 +7,7 @@ export {
   ProjectionContractUnavailableError,
   PROVIDER_CAPABILITIES,
   registerProjectionContract,
+  TRANSPORTATION_PROJECTION_CONTRACT,
   type ProjectionContract,
   type ProviderCapability,
   type ProviderProjection,

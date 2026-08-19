@@ -14,12 +14,8 @@
  *   the capability contract must identify the field and applicable Consent Grant
  *   purpose."
  *
- * No capability contract is registered here, because none is released. v0.1.1
- * names the categories a projection must exclude but does not define the fields
- * any capability may include, and inventing that list would be inventing product
- * semantics. The registry is therefore deny-by-default and empty: every
- * capability fails closed until a released contract is registered, which is
- * Slice 7's work once PROVIDER_INTEGRATIONS defines the fields.
+ * D-017 v0.1.2 releases the first capability-specific contract for
+ * TRANSPORTATION. Every other capability remains deny-by-default.
  */
 
 /** MVP capabilities. CONTEXT.md; ARCHITECTURE.md §11 fulfillment ports. */
@@ -104,7 +100,16 @@ export interface ProjectionContract {
  * registers contracts once they exist, and the registry rejects any contract
  * naming a forbidden category.
  */
-const CONTRACTS = new Map<ProviderCapability, ProjectionContract>();
+export const TRANSPORTATION_PROJECTION_CONTRACT: ProjectionContract = {
+  capability: 'TRANSPORTATION',
+  allowedFields: ['rider', 'pickup', 'dropoff', 'productId', 'noteForDriver'],
+  releasedIn: 'SUAS-specs PROVIDER_INTEGRATIONS.md §13.1; D-017 v0.1.2',
+};
+
+const RELEASED_CONTRACTS: readonly ProjectionContract[] = [TRANSPORTATION_PROJECTION_CONTRACT];
+const CONTRACTS = new Map<ProviderCapability, ProjectionContract>(
+  RELEASED_CONTRACTS.map((contract) => [contract.capability, contract]),
+);
 
 export function registerProjectionContract(contract: ProjectionContract): void {
   const forbidden = contract.allowedFields.filter((field) =>
@@ -119,6 +124,7 @@ export function registerProjectionContract(contract: ProjectionContract): void {
 /** Test and Slice 7 support: forget a registered contract. */
 export function clearProjectionContracts(): void {
   CONTRACTS.clear();
+  for (const contract of RELEASED_CONTRACTS) CONTRACTS.set(contract.capability, contract);
 }
 
 export function projectionContractFor(

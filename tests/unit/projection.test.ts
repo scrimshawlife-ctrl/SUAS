@@ -21,15 +21,18 @@ afterEach(() => {
   clearProjectionContracts();
 });
 
-describe('PROVIDER_INTEGRATIONS.md §13 — no released capability contract exists', () => {
-  it.each(PROVIDER_CAPABILITIES)('has no registered projection for %s', (capability) => {
-    expect(projectionContractFor(capability)).toBeUndefined();
-  });
-
-  it('refuses to build a disclosure for a capability with no released contract', () => {
-    expect(() => projectForProvider('TRANSPORTATION', { pickup_address: '1 Test St' })).toThrow(
-      ProjectionContractUnavailableError,
-    );
+describe('PROVIDER_INTEGRATIONS.md §13 — released capability contracts', () => {
+  it('registers only the released transportation projection by default', () => {
+    expect(projectionContractFor('TRANSPORTATION')?.allowedFields).toEqual([
+      'rider',
+      'pickup',
+      'dropoff',
+      'productId',
+      'noteForDriver',
+    ]);
+    for (const capability of PROVIDER_CAPABILITIES.filter((value) => value !== 'TRANSPORTATION')) {
+      expect(projectionContractFor(capability)).toBeUndefined();
+    }
   });
 
   it('names the released requirement in the refusal, so the gap is legible', () => {
@@ -65,8 +68,7 @@ describe('PRIVACY.md §4.2 — forbidden categories', () => {
 });
 
 describe('projection behavior against a test-only contract', () => {
-  // Registered here rather than shipped: v0.1.1 releases no field list, so this
-  // exercises the mechanism without inventing a released contract.
+  // Override the released contract to exercise the generic registry mechanism.
   function registerTestContract(): void {
     registerProjectionContract({
       capability: 'TRANSPORTATION',

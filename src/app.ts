@@ -25,6 +25,7 @@ import {
 import { createServer } from './http/server.js';
 import { buildInfo, type BuildInfo } from './provenance/build-info.js';
 import { RELEASE_MANIFEST, SPEC_VERSION } from './release/pins.js';
+import { createFulfillmentAdapterRegistry, type AdapterRegistry } from './fulfillment/index.js';
 
 export interface StartedApp {
   readonly config: SuasConfig;
@@ -33,6 +34,7 @@ export interface StartedApp {
   readonly jobQueue: DurableJobQueuePort;
   readonly challengeDelivery: ChallengeDeliveryPort;
   readonly mfa: MfaPort;
+  readonly fulfillmentAdapters: AdapterRegistry;
   readonly buildInfo: BuildInfo;
   close(): Promise<void>;
 }
@@ -79,7 +81,11 @@ export async function startApp(options: StartAppOptions): Promise<StartedApp> {
   const challengeDelivery = createChallengeDelivery(config);
   const mfa = createMfaPort(config);
 
-  // 5. Build provenance.
+  // 5. Provider-neutral fulfillment adapter composition. Uber is optional and
+  // never displaces the mandatory manual transportation path.
+  const fulfillmentAdapters = createFulfillmentAdapterRegistry(config);
+
+  // 6. Build provenance.
   const resolveBuildInfo = (): BuildInfo =>
     buildInfo({
       config,
@@ -88,7 +94,7 @@ export async function startApp(options: StartAppOptions): Promise<StartedApp> {
       env: options.env,
     });
 
-  // 6. HTTP surface.
+  // 7. HTTP surface.
   const server = createServer({
     config,
     buildInfo: resolveBuildInfo,
@@ -112,6 +118,7 @@ export async function startApp(options: StartAppOptions): Promise<StartedApp> {
     jobQueue,
     challengeDelivery,
     mfa,
+    fulfillmentAdapters,
     buildInfo: resolveBuildInfo(),
     close: async () => {
       await server.close();
