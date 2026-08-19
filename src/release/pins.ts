@@ -21,7 +21,7 @@ export const RELEASE_MANIFEST = 'RELEASE_MANIFEST-0.1.2.md' as const;
  * Specs repository merge commit for the pinned release.
  * VERSIONING.md §2: a git SHA is provenance, not the specification version.
  */
-export const SPECS_COMMIT = '84ec574ad643243b23d86973da799f630dac5b6e' as const;
+export const SPECS_COMMIT = '79534156df6396e5da7dd6211ff5ead2ce016fb0' as const;
 
 /** Canonical API version selector. API.md §2; unchanged by v0.1.2. */
 export const API_VERSION = 'v0' as const;

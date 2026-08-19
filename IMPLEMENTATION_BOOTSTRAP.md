@@ -7,7 +7,7 @@
 
 ## Canonical source
 
-- Specs release merge: `84ec574ad643243b23d86973da799f630dac5b6e`
+- Specs release merge: `79534156df6396e5da7dd6211ff5ead2ce016fb0`
 - Release manifest: `RELEASE_MANIFEST-0.1.2.md`
 - Release decision ledger: `RELEASE_DECISIONS-0.1.2.md`
 - Handoff: `HANDOFF.md`

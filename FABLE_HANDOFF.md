@@ -4,7 +4,7 @@
 
 Build against `scrimshawlife-ctrl/SUAS-specs` release **v0.1.2**.
 
-- Specs merge: `84ec574ad643243b23d86973da799f630dac5b6e`
+- Specs merge: `79534156df6396e5da7dd6211ff5ead2ce016fb0`
 - Manifest: `RELEASE_MANIFEST-0.1.2.md`
 - Decision ledger: `RELEASE_DECISIONS-0.1.2.md`
 - Current stage: SPEC-017 implementation conformance
