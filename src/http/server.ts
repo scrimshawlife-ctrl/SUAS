@@ -23,6 +23,7 @@ import type { ChallengeDeliveryPort, MfaPort } from '../auth/index.js';
 import { assertMfaElevated, assertSuasAdmin } from '../authz/index.js';
 import { authenticate } from './authenticate.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerUiRoutes } from './routes/ui.js';
 
 export interface ServerDependencies {
   readonly config: SuasConfig;
@@ -115,6 +116,12 @@ export function createServer(deps: ServerDependencies): FastifyInstance {
   });
 
   const pool = deps.pool;
+  if (pool !== undefined) {
+    // MVP_REFERENCE.md §5 reference surfaces. Mounted under /app rather than
+    // the API prefix; see routes/ui.ts.
+    registerUiRoutes(app, { pool, sessionSecret: deps.config.sessionSecret });
+  }
+
   if (pool !== undefined && deps.challengeDelivery !== undefined && deps.mfa !== undefined) {
     registerAuthRoutes(app, {
       pool,
