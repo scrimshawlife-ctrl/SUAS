@@ -65,7 +65,10 @@ export const DRILLS: readonly DrillDefinition[] = [
   {
     id: 'QUEUE_BACKLOG_BURST',
     description: '§17.5 queue backlog/burst',
-    invariant: '§18 backpressure/tenant fairness is verified',
+    // §18 pairs backpressure with tenant fairness. Only the bounded-response
+    // half is provable here: fairness needs a released policy and D-021's
+    // envelope, so claiming it in the invariant would overstate the drill.
+    invariant: '§18 backpressure, bounded-response half only; tenant fairness is not claimed',
   },
   {
     id: 'DB_TRANSIENT_FAILURE_AROUND_COMMIT',

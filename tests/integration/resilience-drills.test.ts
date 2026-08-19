@@ -18,7 +18,13 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startApp, type StartedApp } from '../../src/app.js';
 import { createUser } from '../../src/identity/index.js';
-import { openCase, readCaseQueue, MAX_PAGE_SIZE } from '../../src/coordination/index.js';
+import {
+  claimCase,
+  executeCaseCommand,
+  openCase,
+  readCaseQueue,
+  MAX_PAGE_SIZE,
+} from '../../src/coordination/index.js';
 import { appendDomainEvent, publishPendingEvents } from '../../src/events/index.js';
 import { runIdempotentCommand } from '../../src/idempotency/index.js';
 import {
@@ -28,6 +34,15 @@ import {
   rescheduleFollowUp,
 } from '../../src/settlement/index.js';
 import { withTransaction } from '../../src/db/index.js';
+import {
+  applyDeliveryCallback,
+  attemptSend,
+  enqueueNotification,
+  FailingChannel,
+  findNotification,
+} from '../../src/notifications/index.js';
+import { resolveCaseWithSettlement } from '../../src/settlement/index.js';
+import type { DisclosureRequest } from '../../src/consent/index.js';
 import { recordDrillResult, type DrillResult } from '../../src/resilience/index.js';
 import type { RecordingChallengeDelivery } from '../../src/auth/index.js';
 import { syntheticEmail } from '../../src/testing/fixture-boundary.js';
@@ -250,20 +265,29 @@ describe('RESILIENCE.md §17.12 and §17.4 — publication recovers after a cras
 
     const delivered: string[] = [];
     // A different instance runs the publisher after the restart.
-    const published = await publishPendingEvents(poolB(), (event) => {
+    // Drain from the other instance. Earlier drills left their own events in
+    // the outbox, so the batch is drained to empty rather than assumed to be
+    // one batch.
+    let batches = 0;
+    for (;;) {
+      const pass = await publishPendingEvents(poolB(), (event) => {
+        delivered.push(event.eventId);
+        return Promise.resolve();
+      });
+      if (pass.published === 0) break;
+      batches += 1;
+    }
+    expect(batches).toBeGreaterThan(0);
+
+    // The committed fact was published exactly once, and a further pass adds nothing.
+    const deliveries = delivered.filter((id) => id === appended.event.eventId).length;
+    expect(deliveries).toBe(1);
+
+    const afterDrain = await publishPendingEvents(poolB(), (event) => {
       delivered.push(event.eventId);
       return Promise.resolve();
     });
-
-    expect(published.published).toBeGreaterThan(0);
-    expect(delivered.length).toBeGreaterThan(0);
-
-    // A second publisher pass must not republish the same logical fact.
-    const second = await publishPendingEvents(poolB(), (event) => {
-      delivered.push(event.eventId);
-      return Promise.resolve();
-    });
-    expect(second.published).toBe(0);
+    expect(afterDrain.published).toBe(0);
 
     record({
       drillId: 'OUTBOX_PUBLISHER_CRASH_AFTER_COMMIT',
@@ -371,59 +395,229 @@ describe('SCALING.md §10 — growing lists are bounded', () => {
         'continuation cursor, despite a caller asking for 10,000.',
       caveats: [
         'Bounded-response behavior only. No burst rate is exercised, because D-021 ' +
-          'releases no envelope.',
+          'releases no envelope, and tenant fairness is not demonstrated at all.',
       ],
     });
   });
 });
 
-describe('Drills exercised elsewhere in this suite, and the one that is blocked', () => {
-  it('records the delegated and blocked drills', () => {
-    // These four are driven by the slice suites that own the machinery, in the
-    // same CI run. Recorded as delegated rather than re-driven here, so the
-    // report states where the evidence actually lives.
-    const delegated: [DrillResult['drillId'], string, string][] = [
-      [
-        'NOTIFICATION_PROVIDER_UNAVAILABLE',
-        'tests/integration/notifications.test.ts',
-        'A failing channel leaves the notification FAILED and does not alter the parent Case.',
-      ],
-      [
-        'FULFILLMENT_TIMEOUT_AFTER_POSSIBLE_ACCEPTANCE',
-        'tests/integration/fulfillment.test.ts',
-        'A timeout records PROVIDER_UNKNOWN and requires reconciliation before a terminal state.',
-      ],
-      [
-        'DUPLICATE_OR_OUT_OF_ORDER_WEBHOOK',
-        'tests/integration/notifications.test.ts',
-        'A repeated delivery callback resolves to one delivery status transition.',
-      ],
-      [
-        'PROVIDER_RATE_LIMIT_MANUAL_FALLBACK',
-        'tests/integration/fulfillment.test.ts',
-        'With no routable API adapter the router falls back to manual coordination.',
-      ],
-    ];
+describe('RESILIENCE.md §17.1 — notification provider unavailable', () => {
+  it('leaves the send visibly failed and does not disturb the parent Case', async () => {
+    const { tenantId, userId } = await enrolledUser();
+    const opened = await withTransaction(poolA(), (tx) =>
+      openCase(tx, { tenantId, veteranUserId: userId, actorType: 'VETERAN', actorId: userId }),
+    );
+    const statusBefore = opened.supportCase.status;
 
-    for (const [drillId, suite, evidence] of delegated) {
-      record({
-        drillId,
-        outcome: 'PASS',
-        evidence: `${evidence} Exercised by ${suite} in the same run.`,
-        caveats: [`Delegated to ${suite}; this harness does not re-drive it.`],
-      });
-    }
+    const disclosure: DisclosureRequest = {
+      tenantId,
+      veteranUserId: userId,
+      permission: 'can_view',
+      scope: 'current_requests',
+      granteeType: 'SYSTEM',
+      granteeId: 'notifications',
+      purpose: 'Notify the veteran about their own request',
+      systemBasis: 'SYSTEM_INTERNAL_PROCESSING',
+    };
+
+    const enqueued = await enqueueNotification(poolA(), {
+      tenantId,
+      recipientUserId: userId,
+      destination: syntheticEmail('drill-recipient'),
+      reason: 'drill_provider_outage',
+      channel: 'EMAIL',
+      templateVersion: 'drill@1',
+      disclosure,
+    });
+
+    // The provider is down for every attempt.
+    const failing = new Map([['EMAIL' as const, new FailingChannel('EMAIL')]]);
+    await attemptSend(poolA(), failing, {
+      tenantId,
+      notificationId: enqueued.notification.notificationId,
+      disclosure,
+      renderBody: () => 'Synthetic notification body.',
+    });
+
+    const after = await findNotification(poolA(), tenantId, enqueued.notification.notificationId);
+    expect(after?.deliveryStatus).not.toBe('DELIVERED');
+    expect(after?.deliveryStatus).not.toBe('SENT');
+
+    // The assertion the earlier evidence string claimed but never made.
+    const caseAfter = await poolA().query<{ status: string }>(
+      'SELECT status FROM support_cases WHERE tenant_id = $1 AND case_id = $2',
+      [tenantId, opened.supportCase.caseId],
+    );
+    expect(caseAfter.rows[0]?.status).toBe(statusBefore);
+
+    record({
+      drillId: 'NOTIFICATION_PROVIDER_UNAVAILABLE',
+      outcome: 'PASS',
+      evidence:
+        `A send against an unavailable channel left delivery status ` +
+        `${after?.deliveryStatus ?? 'unknown'} and the parent Case still ${statusBefore}.`,
+      caveats: [],
+    });
+  });
+});
+
+describe('RESILIENCE.md §17.3 — duplicate provider webhook', () => {
+  it('applies a repeated delivery callback once', async () => {
+    const { tenantId, userId } = await enrolledUser();
+    const disclosure: DisclosureRequest = {
+      tenantId,
+      veteranUserId: userId,
+      permission: 'can_view',
+      scope: 'current_requests',
+      granteeType: 'SYSTEM',
+      granteeId: 'notifications',
+      purpose: 'Notify the veteran about their own request',
+      systemBasis: 'SYSTEM_INTERNAL_PROCESSING',
+    };
+
+    const enqueued = await enqueueNotification(poolA(), {
+      tenantId,
+      recipientUserId: userId,
+      destination: syntheticEmail('drill-webhook'),
+      reason: 'drill_duplicate_webhook',
+      channel: 'EMAIL',
+      templateVersion: 'drill@1',
+      disclosure,
+    });
+
+    const callback = {
+      tenantId,
+      notificationId: enqueued.notification.notificationId,
+      providerEventId: `evt-${randomUUID()}`,
+      reportedStatus: 'DELIVERED' as const,
+    };
+
+    // The provider redelivers the same event, and a stale one arrives after it.
+    const first = await applyDeliveryCallback(poolA(), callback);
+    const duplicate = await applyDeliveryCallback(poolB(), callback);
+    const outOfOrder = await applyDeliveryCallback(poolB(), {
+      ...callback,
+      providerEventId: `evt-${randomUUID()}`,
+      reportedStatus: 'SENT',
+    });
+
+    expect(first.applied).toBe(true);
+    expect(duplicate.applied).toBe(false);
+    expect(duplicate.reason).toBe('DUPLICATE');
+    expect(outOfOrder.applied).toBe(false);
+
+    record({
+      drillId: 'DUPLICATE_OR_OUT_OF_ORDER_WEBHOOK',
+      outcome: 'PASS',
+      evidence:
+        'A redelivered callback was refused as DUPLICATE on the other instance, and a ' +
+        'later out-of-order callback did not regress the terminal delivery state.',
+      caveats: [],
+    });
+  });
+});
+
+describe('RESILIENCE.md §17.9 — concurrent Settlement resolve', () => {
+  it('settles once when two resolves race with different keys', async () => {
+    const { tenantId, userId } = await enrolledUser();
+    const opened = await withTransaction(poolA(), (tx) =>
+      openCase(tx, { tenantId, veteranUserId: userId, actorType: 'VETERAN', actorId: userId }),
+    );
+
+    // RESOLVE is legal only from ACTIVE, by the assigned responder, with an
+    // active assignment (CASES.md §4). Drive the Case there before racing.
+    await claimCase(poolA(), {
+      tenantId,
+      caseId: opened.supportCase.caseId,
+      responderUserId: userId,
+    });
+    await executeCaseCommand(poolA(), {
+      tenantId,
+      caseId: opened.supportCase.caseId,
+      command: 'ACTIVATE',
+      actorId: userId,
+      actorType: 'RESPONDER',
+    });
+
+    const content = {
+      requested: {},
+      occurred: {},
+      fulfilled: {},
+      unresolved: {},
+      authoredBy: userId,
+      responderConfirmedBy: userId,
+    };
+
+    // A genuine race across both instances, with distinct idempotency keys so
+    // the command kernel cannot collapse them into a replay.
+    const outcomes = await Promise.allSettled([
+      resolveCaseWithSettlement(poolA(), {
+        tenantId,
+        caseId: opened.supportCase.caseId,
+        actorId: userId,
+        content,
+        idempotencyKey: randomUUID(),
+      }),
+      resolveCaseWithSettlement(poolB(), {
+        tenantId,
+        caseId: opened.supportCase.caseId,
+        actorId: userId,
+        content,
+        idempotencyKey: randomUUID(),
+      }),
+    ]);
+
+    const fulfilled = outcomes.filter((o) => o.status === 'fulfilled');
+    expect(fulfilled).toHaveLength(1);
+
+    const settlements = await poolA().query(
+      'SELECT settlement_id FROM settlements WHERE tenant_id = $1 AND case_id = $2',
+      [tenantId, opened.supportCase.caseId],
+    );
+    expect(settlements.rowCount).toBe(1);
 
     record({
       drillId: 'CONCURRENT_SETTLEMENT_RESOLVE',
       outcome: 'PASS',
       evidence:
-        'Concurrent resolve under one cycle settles a single row via the unique ' +
-        'cycle index. Exercised by tests/integration/settlement.test.ts in the same run.',
-      caveats: ['Delegated to tests/integration/settlement.test.ts.'],
+        'Two resolves raced across both instances under distinct idempotency keys; ' +
+        'exactly one succeeded and exactly one Settlement row exists.',
+      caveats: [],
+    });
+  });
+});
+
+describe('The drills this harness cannot honestly run', () => {
+  it('records them BLOCKED rather than passing on another suite', () => {
+    // Neither is re-driven here, and neither may borrow another file's result:
+    // a caveat pointing at another suite is not §17 evidence.
+    record({
+      drillId: 'FULFILLMENT_TIMEOUT_AFTER_POSSIBLE_ACCEPTANCE',
+      outcome: 'BLOCKED',
+      evidence: 'Not re-driven by this harness.',
+      blockedReason:
+        'The ambiguous timeout is only meaningful through a transmitting adapter, and a ' +
+        'transmitting adapter cannot complete while no per-capability projection contract ' +
+        'is released (Slice 7 gap). Driving it here would require registering an invented ' +
+        'contract.',
+      caveats: [
+        'PROVIDER_UNKNOWN handling itself is covered by tests/integration/fulfillment.test.ts.',
+      ],
     });
 
-    // The only genuinely unrunnable drill.
+    record({
+      drillId: 'PROVIDER_RATE_LIMIT_MANUAL_FALLBACK',
+      outcome: 'BLOCKED',
+      evidence: 'Not re-driven by this harness.',
+      blockedReason:
+        'No released policy maps a RATE_LIMITED adapter to a manual fallback. The adapter ' +
+        'health state exists, but the routing rule that would make rate limiting fall back ' +
+        'to manual coordination is unspecified, so there is no defined behavior to drill.',
+      caveats: [
+        'Availability-based degradation to manual is a different rule, and is not this drill.',
+      ],
+    });
+
     record({
       drillId: 'RESTORE_REHEARSAL_WITH_PENDING_ATTEMPTS',
       outcome: 'BLOCKED',
@@ -454,7 +648,16 @@ describe('RESILIENCE.md §17 — the run is recorded as a whole', () => {
 
     // Completeness is the assertion: a missing drill would have thrown.
     expect(report.results).toHaveLength(13);
-    expect(report.blocked).toEqual(['RESTORE_REHEARSAL_WITH_PENDING_ATTEMPTS']);
+    // Three drills this harness cannot honestly run, each with a stated reason.
+    expect([...report.blocked].sort()).toEqual([
+      'FULFILLMENT_TIMEOUT_AFTER_POSSIBLE_ACCEPTANCE',
+      'PROVIDER_RATE_LIMIT_MANUAL_FALLBACK',
+      'RESTORE_REHEARSAL_WITH_PENDING_ATTEMPTS',
+    ]);
+    // No result borrows another suite's evidence.
+    for (const result of report.results) {
+      expect(result.caveats.join(' '), result.drillId).not.toContain('Delegated to');
+    }
     expect(report.readiness).toContain('NOT_READY');
     expect(report.openDecisions.join(' ')).toContain('D-024');
   });
