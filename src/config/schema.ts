@@ -312,12 +312,62 @@ export function productionDataMarkersIn(databaseUrl: string): string[] {
   return PRODUCTION_DATA_MARKERS.filter((marker) => tokens.includes(marker));
 }
 
+function validateProviderEndpoint(
+  varName: string,
+  rawUrl: string | undefined,
+  environment: EnvironmentClass,
+  ctx: z.RefinementCtx,
+): void {
+  if (rawUrl === undefined) return;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${varName} must be an absolute HTTPS URL.`,
+    });
+    return;
+  }
+
+  const loopback = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  const localHttp = (environment === 'LOCAL' || environment === 'TEST') && loopback;
+  if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && localHttp)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        `${varName} must use HTTPS; HTTP is permitted only for localhost/127.0.0.1 in LOCAL or TEST. ` +
+        'This prevents provider credentials from being redirected to an arbitrary cleartext endpoint.',
+    });
+  }
+  if (parsed.username !== '' || parsed.password !== '') {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `${varName} must not contain URL-embedded credentials.`,
+    });
+  }
+}
+
 /**
  * Full configuration schema including the ENVIRONMENT.md §5 cross-field
  * startup-validation invariants. Every failure here is fail-closed by design.
  */
 export const configSchema = rawConfigSchema.superRefine((raw, ctx) => {
   const environment = raw.SUAS_ENV;
+
+  validateProviderEndpoint(
+    'SUAS_AMADEUS_LODGING_TOKEN_URL',
+    raw.SUAS_AMADEUS_LODGING_TOKEN_URL,
+    environment,
+    ctx,
+  );
+  validateProviderEndpoint(
+    'SUAS_AMADEUS_LODGING_API_BASE_URL',
+    raw.SUAS_AMADEUS_LODGING_API_BASE_URL,
+    environment,
+    ctx,
+  );
 
   // ENVIRONMENT.md §3 rule 1 / §5 "spec version ... mismatch".
   if (raw.SUAS_SPEC_VERSION !== SPEC_VERSION) {

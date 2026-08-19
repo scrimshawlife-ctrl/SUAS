@@ -161,6 +161,37 @@ describe('ENVIRONMENT.md §5 — required configuration for enabled capabilities
   });
 });
 
+describe('SECURITY.md — provider endpoint configuration', () => {
+  it('rejects cleartext non-loopback Amadeus endpoints', () => {
+    const issues = issuesFor(
+      validEnv({
+        SUAS_AMADEUS_LODGING_TOKEN_URL: 'http://metadata.internal/token',
+        SUAS_AMADEUS_LODGING_API_BASE_URL: 'http://example.test',
+      }),
+    );
+    expect(issues.join('\n')).toContain('must use HTTPS');
+  });
+
+  it('rejects URL-embedded credentials', () => {
+    const issues = issuesFor(
+      validEnv({ SUAS_AMADEUS_LODGING_TOKEN_URL: 'https://user:password@auth.example/token' }),
+    );
+    expect(issues.join('\n')).toContain('must not contain URL-embedded credentials');
+    expect(issues.join('\n')).not.toContain('password');
+  });
+
+  it('allows loopback HTTP only in LOCAL or TEST', () => {
+    expect(() =>
+      loadConfig(
+        validEnv({
+          SUAS_AMADEUS_LODGING_TOKEN_URL: 'http://127.0.0.1:4010/token',
+          SUAS_AMADEUS_LODGING_API_BASE_URL: 'http://localhost:4010',
+        }),
+      ),
+    ).not.toThrow();
+  });
+});
+
 describe('ENVIRONMENT.md §3 — unavailable vendor surfaces stay unavailable', () => {
   it('rejects a real fulfillment adapter and cites the owning decisions', () => {
     const issues = issuesFor(validEnv({ SUAS_TRANSPORTATION_ADAPTER_MODE: 'uber' }));
