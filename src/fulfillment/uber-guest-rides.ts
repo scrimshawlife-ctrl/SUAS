@@ -196,11 +196,15 @@ export function normalizeUberRideStatus(status: string | undefined): Fulfillment
     scheduled: 'PROVIDER_ACCEPTED',
     arriving: 'PROVIDER_IN_PROGRESS',
     in_progress: 'PROVIDER_IN_PROGRESS',
+    driver_redispatched: 'PROVIDER_PENDING',
+    upfront_driver_assigned: 'PROVIDER_ACCEPTED',
     completed: 'PROVIDER_COMPLETED',
     failed: 'PROVIDER_FAILED',
     canceled: 'PROVIDER_CANCELLED',
     cancelled: 'PROVIDER_CANCELLED',
     no_drivers_available: 'PROVIDER_DECLINED',
+    driver_canceled: 'PROVIDER_CANCELLED',
+    rider_canceled: 'PROVIDER_CANCELLED',
   };
   return {
     status: statusMap[normalized] ?? 'PROVIDER_UNKNOWN',
@@ -236,8 +240,18 @@ export class UberGuestRidesAdapter implements FulfillmentAdapter {
     try {
       await this.tokenProvider.accessToken();
       return 'HEALTHY';
-    } catch {
-      return 'MISCONFIGURED';
+    } catch (error) {
+      if (error instanceof UberGuestRidesProviderError) {
+        if (
+          error.message === 'oauth_credentials_missing' ||
+          error.statusCode === 401 ||
+          error.statusCode === 403
+        ) {
+          return 'MISCONFIGURED';
+        }
+        if (error.statusCode === 429) return 'RATE_LIMITED';
+      }
+      return 'UNAVAILABLE';
     }
   }
 
@@ -341,7 +355,16 @@ export function verifyUberWebhookHmac(rawBody: string, signature: string, secret
 }
 
 export function translateUberWebhookPayload(payload: JsonObject): FulfillmentOutcome {
-  const event = typeof payload.event_type === 'string' ? payload.event_type : undefined;
-  const status = typeof payload.status === 'string' ? payload.status : event;
-  return outcomeFromPayload(payload, status);
+  const meta = isJsonObject(payload.meta) ? payload.meta : undefined;
+  const status = typeof meta?.status === 'string' ? meta.status : undefined;
+  const externalReference = typeof meta?.resource_id === 'string' ? meta.resource_id : undefined;
+  const outcome = normalizeUberRideStatus(status);
+  return {
+    ...outcome,
+    ...(externalReference !== undefined ? { externalReference } : {}),
+  };
+}
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

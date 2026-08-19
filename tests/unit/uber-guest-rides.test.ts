@@ -55,6 +55,10 @@ describe('Uber Guest Rides adapter', () => {
     expect(normalizeUberRideStatus('arriving').status).toBe('PROVIDER_IN_PROGRESS');
     expect(normalizeUberRideStatus('completed').status).toBe('PROVIDER_COMPLETED');
     expect(normalizeUberRideStatus('no_drivers_available').status).toBe('PROVIDER_DECLINED');
+    expect(normalizeUberRideStatus('driver_redispatched').status).toBe('PROVIDER_PENDING');
+    expect(normalizeUberRideStatus('upfront_driver_assigned').status).toBe('PROVIDER_ACCEPTED');
+    expect(normalizeUberRideStatus('driver_canceled').status).toBe('PROVIDER_CANCELLED');
+    expect(normalizeUberRideStatus('rider_canceled').status).toBe('PROVIDER_CANCELLED');
     expect(normalizeUberRideStatus('surprising_new_status').status).toBe('PROVIDER_UNKNOWN');
   });
 
@@ -150,9 +154,9 @@ describe('Uber Guest Rides adapter', () => {
 
   it('verifies webhook HMACs and translates payloads without mounting ingress', () => {
     const raw = JSON.stringify({
-      request_id: 'request-1',
-      status: 'completed',
-      receipt_url: 'https://receipt.test/r',
+      event_id: 'event-1',
+      event_type: 'guests.trips.status_changed',
+      meta: { resource_id: 'request-1', status: 'completed' },
     });
     const signature = createHmac('sha256', 'webhook-secret').update(raw).digest('hex');
 
@@ -161,7 +165,6 @@ describe('Uber Guest Rides adapter', () => {
     expect(translateUberWebhookPayload(JSON.parse(raw))).toMatchObject({
       status: 'PROVIDER_COMPLETED',
       externalReference: 'request-1',
-      metadata: { receipt_url: 'https://receipt.test/r' },
     });
   });
 
