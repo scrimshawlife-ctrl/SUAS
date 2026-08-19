@@ -30,7 +30,13 @@ export const COMMUNICATION_MODES = ['disabled', 'fake', 'sink'] as const;
 export type CommunicationMode = (typeof COMMUNICATION_MODES)[number];
 
 /** ENVIRONMENT.md §3 "Fulfillment adapters". Real adapter modes require D-017–D-020. */
-export const ADAPTER_MODES = ['manual', 'fake', 'disabled', 'uber_guest_rides'] as const;
+export const ADAPTER_MODES = [
+  'manual',
+  'fake',
+  'disabled',
+  'uber_guest_rides',
+  'amadeus_lodging',
+] as const;
 export type AdapterMode = (typeof ADAPTER_MODES)[number];
 
 /** ENVIRONMENT.md §3 "Support Signal / safety / reporting". */
@@ -176,6 +182,10 @@ const rawConfigSchema = z.object({
   SUAS_UBER_GUEST_RIDES_TOKEN_URL: optionalRaw,
   SUAS_UBER_GUEST_RIDES_API_BASE_URL: optionalRaw,
   SUAS_UBER_GUEST_RIDES_WEBHOOK_SECRET: optionalRaw,
+  SUAS_AMADEUS_LODGING_CLIENT_ID: optionalRaw,
+  SUAS_AMADEUS_LODGING_CLIENT_SECRET: optionalRaw,
+  SUAS_AMADEUS_LODGING_TOKEN_URL: optionalRaw,
+  SUAS_AMADEUS_LODGING_API_BASE_URL: optionalRaw,
 
   // --- Support Signal / safety / reporting. ENVIRONMENT.md §3, §5. ---
   SUAS_SUPPORT_SIGNAL_MODE: requiredEnum(
@@ -237,6 +247,12 @@ export interface SuasConfig {
       readonly tokenUrl: string | undefined;
       readonly apiBaseUrl: string | undefined;
       readonly webhookSecret: string | undefined;
+    };
+    readonly amadeusLodging: {
+      readonly clientId: string | undefined;
+      readonly clientSecret: string | undefined;
+      readonly tokenUrl: string | undefined;
+      readonly apiBaseUrl: string | undefined;
     };
   };
   readonly supportSignalMode: SupportSignalMode;
@@ -340,13 +356,13 @@ export const configSchema = rawConfigSchema.superRefine((raw, ctx) => {
   }
 
   // HANDOFF.md §2 "Production deployment: prohibited";
-  // RELEASE_MANIFEST-0.1.2.md "Readiness boundary".
+  // RELEASE_MANIFEST-0.1.3.md "Readiness boundary".
   if (environment === 'PRODUCTION' && !SPEC_018_PRODUCTION_AUTHORIZED) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message:
         'SUAS_ENV=PRODUCTION is rejected: production deployment is prohibited until SPEC-018 ' +
-        'records launch-readiness evidence (HANDOFF.md §2; RELEASE_MANIFEST-0.1.2.md "Readiness boundary").',
+        'records launch-readiness evidence (HANDOFF.md §2; RELEASE_MANIFEST-0.1.3.md "Readiness boundary").',
     });
   }
 
@@ -459,6 +475,12 @@ export function shapeConfig(
         tokenUrl: raw.SUAS_UBER_GUEST_RIDES_TOKEN_URL,
         apiBaseUrl: raw.SUAS_UBER_GUEST_RIDES_API_BASE_URL,
         webhookSecret: raw.SUAS_UBER_GUEST_RIDES_WEBHOOK_SECRET,
+      },
+      amadeusLodging: {
+        clientId: raw.SUAS_AMADEUS_LODGING_CLIENT_ID,
+        clientSecret: raw.SUAS_AMADEUS_LODGING_CLIENT_SECRET,
+        tokenUrl: raw.SUAS_AMADEUS_LODGING_TOKEN_URL,
+        apiBaseUrl: raw.SUAS_AMADEUS_LODGING_API_BASE_URL,
       },
     },
     supportSignalMode: raw.SUAS_SUPPORT_SIGNAL_MODE,

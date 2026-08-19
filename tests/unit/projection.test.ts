@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe('PROVIDER_INTEGRATIONS.md §13 — released capability contracts', () => {
-  it('registers only the released transportation projection by default', () => {
+  it('registers the released transportation and temporary shelter projections by default', () => {
     expect(projectionContractFor('TRANSPORTATION')?.allowedFields).toEqual([
       'rider',
       'pickup',
@@ -30,7 +30,15 @@ describe('PROVIDER_INTEGRATIONS.md §13 — released capability contracts', () =
       'productId',
       'noteForDriver',
     ]);
-    for (const capability of PROVIDER_CAPABILITIES.filter((value) => value !== 'TRANSPORTATION')) {
+    expect(projectionContractFor('TEMPORARY_SHELTER')?.allowedFields).toEqual([
+      'location',
+      'stay',
+      'adults',
+      'roomQuantity',
+    ]);
+    for (const capability of PROVIDER_CAPABILITIES.filter(
+      (value) => value !== 'TRANSPORTATION' && value !== 'TEMPORARY_SHELTER',
+    )) {
       expect(projectionContractFor(capability)).toBeUndefined();
     }
   });
@@ -128,9 +136,10 @@ describe('projection behavior against a test-only contract', () => {
     expect(projection.disclosedFieldNames).toEqual(['service_request_id']);
   });
 
-  it('still refuses other capabilities', () => {
+  it('keeps released temporary shelter available while refusing unreleased capabilities', () => {
     registerTestContract();
-    expect(() => projectForProvider('TEMPORARY_SHELTER', {})).toThrow(
+    expect(projectForProvider('TEMPORARY_SHELTER', {}).fields).toEqual({});
+    expect(() => projectForProvider('FOOD_SUPPORT', {})).toThrow(
       ProjectionContractUnavailableError,
     );
   });

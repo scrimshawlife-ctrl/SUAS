@@ -50,7 +50,7 @@ describe('ENVIRONMENT.md §8 — required provenance fields', () => {
 describe('VERSIONING.md §3 — version identities stay separate', () => {
   it('reports spec, API, event schema, app, and schema versions independently', () => {
     const result = info();
-    expect(result.spec_version).toBe('0.1.2');
+    expect(result.spec_version).toBe('0.1.3');
     expect(result.api_version).toBe(API_VERSION);
     expect(result.event_schema_version).toBe(EVENT_SCHEMA_VERSION);
     expect(result.schema_version).toBe(1);

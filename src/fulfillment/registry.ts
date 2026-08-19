@@ -1,6 +1,7 @@
 import type { SuasConfig } from '../config/index.js';
 import { AdapterRegistry } from './router.js';
 import { FakeAdapter, InformationOnlyAdapter, ManualAdapter } from './adapters.js';
+import { AmadeusLodgingAdapter } from './amadeus-lodging.js';
 import { UberGuestRidesAdapter } from './uber-guest-rides.js';
 
 export function createFulfillmentAdapterRegistry(config: SuasConfig): AdapterRegistry {
@@ -17,6 +18,9 @@ export function createFulfillmentAdapterRegistry(config: SuasConfig): AdapterReg
     registry.register(new ManualAdapter('transportation-manual'));
   }
   registerMode(registry, 'shelter', config.adapters.shelter, ['SHELTER'], config);
+  if (config.adapters.shelter === 'amadeus_lodging') {
+    registry.register(new ManualAdapter('shelter-manual'));
+  }
   registerMode(registry, 'food', config.adapters.food, ['FOOD'], config);
   registerMode(registry, 'peer-support', config.adapters.peerSupport, ['PEER_SUPPORT'], config);
   return registry;
@@ -54,6 +58,30 @@ function registerMode(
         undefined,
         undefined,
         'transportation-api',
+      ),
+    );
+  }
+  if (mode === 'amadeus_lodging') {
+    if (adapterId !== 'shelter') {
+      registry.register(new InformationOnlyAdapter(adapterId));
+      return;
+    }
+    const lodgingConfig = config.adapters.amadeusLodging;
+    registry.register(
+      new AmadeusLodgingAdapter(
+        {
+          ...(lodgingConfig.clientId !== undefined ? { clientId: lodgingConfig.clientId } : {}),
+          ...(lodgingConfig.clientSecret !== undefined
+            ? { clientSecret: lodgingConfig.clientSecret }
+            : {}),
+          ...(lodgingConfig.tokenUrl !== undefined ? { tokenUrl: lodgingConfig.tokenUrl } : {}),
+          ...(lodgingConfig.apiBaseUrl !== undefined
+            ? { apiBaseUrl: lodgingConfig.apiBaseUrl }
+            : {}),
+        },
+        undefined,
+        undefined,
+        'shelter-api',
       ),
     );
   }

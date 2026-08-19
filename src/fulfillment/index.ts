@@ -86,6 +86,31 @@ export {
 } from './referrals.js';
 export { createFulfillmentAdapterRegistry } from './registry.js';
 export {
+  AMADEUS_LODGING_DEFAULT_API_BASE_URL,
+  AMADEUS_LODGING_DEFAULT_TOKEN_URL,
+  AmadeusLodgingAdapter,
+  AmadeusLodgingOAuthTokenProvider,
+  AmadeusLodgingProviderError,
+  normalizeAmadeusHotelOffers,
+  type AmadeusFetchTransport,
+  type AmadeusLodgingConfig,
+  type AmadeusTokenProvider,
+} from './amadeus-lodging.js';
+export {
+  rankTemporaryShelterOffers,
+  TEMPORARY_SHELTER_AVAILABILITY_STATUSES,
+  TEMPORARY_SHELTER_OPERATION_STATUSES,
+  type RankedTemporaryShelterOffer,
+  type TemporaryShelterAvailabilityStatus,
+  type TemporaryShelterOffer,
+  type TemporaryShelterOfferAction,
+  type TemporaryShelterOperationResult,
+  type TemporaryShelterOperationStatus,
+  type TemporaryShelterPort,
+  type TemporaryShelterRankingExplanation,
+  type TemporaryShelterSearchContext,
+} from './temporary-shelter.js';
+export {
   UberGuestRidesAdapter,
   UberGuestRidesOAuthTokenProvider,
   UberGuestRidesProviderError,

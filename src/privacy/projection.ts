@@ -14,8 +14,8 @@
  *   the capability contract must identify the field and applicable Consent Grant
  *   purpose."
  *
- * D-017 v0.1.2 releases the first capability-specific contract for
- * TRANSPORTATION. Every other capability remains deny-by-default.
+ * D-017 v0.1.2 releases TRANSPORTATION, and the SPEC-017 runtime shelter slice
+ * releases the bounded TEMPORARY_SHELTER search projection. Other capabilities remain deny-by-default.
  */
 
 /** MVP capabilities. CONTEXT.md; ARCHITECTURE.md §11 fulfillment ports. */
@@ -106,7 +106,16 @@ export const TRANSPORTATION_PROJECTION_CONTRACT: ProjectionContract = {
   releasedIn: 'SUAS-specs PROVIDER_INTEGRATIONS.md §13.1; D-017 v0.1.2',
 };
 
-const RELEASED_CONTRACTS: readonly ProjectionContract[] = [TRANSPORTATION_PROJECTION_CONTRACT];
+export const TEMPORARY_SHELTER_PROJECTION_CONTRACT: ProjectionContract = {
+  capability: 'TEMPORARY_SHELTER',
+  allowedFields: ['location', 'stay', 'adults', 'roomQuantity'],
+  releasedIn: 'SUAS-specs PROVIDER_INTEGRATIONS.md §13; SPEC-017 runtime shelter slice',
+};
+
+const RELEASED_CONTRACTS: readonly ProjectionContract[] = [
+  TRANSPORTATION_PROJECTION_CONTRACT,
+  TEMPORARY_SHELTER_PROJECTION_CONTRACT,
+];
 const CONTRACTS = new Map<ProviderCapability, ProjectionContract>(
   RELEASED_CONTRACTS.map((contract) => [contract.capability, contract]),
 );
