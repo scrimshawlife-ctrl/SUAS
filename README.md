@@ -11,7 +11,7 @@ Public site: https://scrimshawlife-ctrl.github.io/SUAS/
 Canonical released specs:
 
 - specification stack: `0.1.3`
-- specs merge: `75338182bf4ead1adb61dfbc146d0a033ac89dc7`
+- specs merge: `33c6f1925a8f8eb7ea1f52e77a102b28a249430f`
 - manifest: `RELEASE_MANIFEST-0.1.3.md`
 - current stage: `SPEC-017` implementation conformance
 - implementation authority: `RELEASED_FOR_IMPLEMENTATION`
