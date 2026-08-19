@@ -16,6 +16,7 @@ import {
   renderResourceList,
   renderResponderDashboard,
   renderVeteranHome,
+  UnknownSurfaceStateError,
   VISUAL_FIXTURES,
 } from '../../src/ui/index.js';
 
@@ -129,6 +130,50 @@ describe('MVP_REFERENCE.md §7.2 — the veteran home is truthful about QRF', ()
   });
 });
 
+describe('MVP_REFERENCE.md §7.2 — the veteran home with a request in flight', () => {
+  const inFlight = {
+    shell,
+    categories: CATEGORY_CARDS,
+    activeQrf: {
+      facts: {
+        requestStatus: 'MATCHING',
+        responderAssigned: false,
+        responderNotificationDelivered: false,
+        coordinationDegraded: false,
+        matchingExhausted: false,
+      },
+      authorizedVoicePath: false,
+      authorizedMessagePath: false,
+    },
+  } as const;
+
+  it('renders instead of failing its own required-element assert', () => {
+    // The deploy action is legitimately replaced once a request exists; before
+    // the state variant existed this threw and the live route returned 500.
+    expect(() => renderVeteranHome(inFlight)).not.toThrow();
+  });
+
+  it('replaces the deploy action with the request block in the same position', () => {
+    const markup = renderVeteranHome(inFlight);
+    expect(markup).toContain('Your QRF request');
+    // Offering a second deploy while one is in flight would be wrong.
+    expect(markup).not.toContain('Deploy QRF');
+  });
+
+  it('keeps every other §5 landmark the default state requires', () => {
+    const markup = renderVeteranHome(inFlight);
+    for (const element of ['Immediate Resources', 'Housing', 'Food']) {
+      expect(markup, element).toContain(element);
+    }
+  });
+
+  it('refuses a surface state that declares no required elements', () => {
+    expect(() => assertRequiredElementsPresent('VETERAN_HOME', '<p>x</p>', 'INVENTED')).toThrow(
+      UnknownSurfaceStateError,
+    );
+  });
+});
+
 describe('MVP_REFERENCE.md §8 — resource screens', () => {
   it('says so when no contact method is recorded', () => {
     const markup = renderResourceList({
@@ -209,10 +254,17 @@ describe('Chat is honest about being unimplemented', () => {
   it('states unavailability rather than rendering an empty inbox', () => {
     const markup = renderChat({
       shell,
-      threads: [],
-      unavailableReason: 'Messaging is not available yet.',
+      availability: { status: 'UNAVAILABLE', reason: 'Messaging is not available yet.' },
     });
     expect(markup).toContain('Messaging is not available yet.');
+    expect(markup).not.toContain('You have no conversations yet.');
+  });
+
+  it('cannot express an empty inbox without declaring messaging available', () => {
+    // The union makes "no threads and no reason" unrepresentable, so the empty
+    // inbox reachable below is a deliberate choice by a future caller.
+    const markup = renderChat({ shell, availability: { status: 'AVAILABLE', threads: [] } });
+    expect(markup).toContain('You have no conversations yet.');
   });
 });
 
@@ -220,13 +272,16 @@ describe('Veteran-authored text is data, not markup', () => {
   it('escapes a thread preview containing markup', () => {
     const markup = renderChat({
       shell,
-      threads: [
-        {
-          threadId: 't1',
-          counterpartLabel: 'Responder',
-          lastMessagePreview: '<script>alert(1)</script>',
-        },
-      ],
+      availability: {
+        status: 'AVAILABLE',
+        threads: [
+          {
+            threadId: 't1',
+            counterpartLabel: 'Responder',
+            lastMessagePreview: '<script>alert(1)</script>',
+          },
+        ],
+      },
     });
     expect(markup).not.toContain('<script>');
     expect(markup).toContain('&lt;script&gt;');

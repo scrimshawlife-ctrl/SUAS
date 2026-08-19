@@ -164,15 +164,23 @@ export interface ChatThreadViewModel {
   readonly lastMessagePreview?: string;
 }
 
+/**
+ * Chat is either unavailable with a stated reason, or available with a thread
+ * list that may be empty.
+ *
+ * A union rather than an optional reason, because "no threads and no reason"
+ * renders as an empty inbox — which implies working messaging. No released
+ * slice stores a thread, so that state would always be a lie today, and the
+ * type makes it unrepresentable rather than relying on every caller to
+ * remember. The slice that implements messaging supplies `AVAILABLE`.
+ */
+export type ChatAvailability =
+  | { readonly status: 'UNAVAILABLE'; readonly reason: string }
+  | { readonly status: 'AVAILABLE'; readonly threads: readonly ChatThreadViewModel[] };
+
 export interface ChatViewModel {
   readonly shell: ShellViewModel;
-  /**
-   * Threads the viewer is consent-authorized to see. An empty list is a
-   * truthful state, not an error.
-   */
-  readonly threads: readonly ChatThreadViewModel[];
-  /** Set when messaging is unavailable, e.g. a channel failed closed. */
-  readonly unavailableReason?: string;
+  readonly availability: ChatAvailability;
 }
 
 /** A capability's readiness, as the admin overview may state it. */

@@ -188,10 +188,12 @@ export function registerUiRoutes(app: FastifyInstance, deps: UiRouteDependencies
     await reply.type(HTML).send(
       renderChat({
         shell: shell('Chat', { currentNav: 'CHAT' }),
-        threads: [],
-        unavailableReason:
-          'Messaging is not available yet. Your responder will contact you through ' +
-          'the channels you have consented to.',
+        availability: {
+          status: 'UNAVAILABLE',
+          reason:
+            'Messaging is not available yet. Your responder will contact you through ' +
+            'the channels you have consented to.',
+        },
       }),
     );
   });

@@ -57,6 +57,16 @@ export interface SurfaceRequirement {
    * form of §2's "no required element may silently disappear".
    */
   readonly requiredElements: readonly string[];
+  /**
+   * Required elements for a named state of the same surface.
+   *
+   * A surface legitimately changes its dominant action with state: once a QRF
+   * request is in flight, offering a second Deploy button would be wrong, so
+   * the in-flight home carries the request block in that position instead. §2
+   * still applies — the landmark must be *replaced*, never dropped — so each
+   * state names its own required elements rather than relaxing the assert.
+   */
+  readonly stateVariants?: Readonly<Record<string, readonly string[]>>;
   /** Divergences from §7 that this surface must implement, if any. */
   readonly divergences: readonly string[];
 }
@@ -85,6 +95,12 @@ export const REQUIRED_SURFACES: readonly SurfaceRequirement[] = [
     conformance: 'MUST_MATCH',
     audience: 'VETERAN',
     requiredElements: ['Deploy QRF', 'Immediate Resources', 'Housing', 'Food'],
+    stateVariants: {
+      // §7.2 preserves the deploy → searching → contact/cancel sequence, so the
+      // in-flight home shows the request in the dominant slot. Everything else
+      // §5 requires stays exactly where it was.
+      QRF_IN_FLIGHT: ['Your QRF request', 'Immediate Resources', 'Housing', 'Food'],
+    },
     divergences: ['§7.2 QRF deployment truthfulness'],
   },
   {
@@ -204,12 +220,26 @@ export class MissingRequiredElementError extends Error {
   constructor(
     readonly surfaceId: SurfaceId,
     readonly missing: readonly string[],
+    readonly variant?: string,
   ) {
     super(
-      `Surface ${surfaceId} rendered without required element(s): ${missing.join(', ')}. ` +
+      `Surface ${surfaceId}${variant === undefined ? '' : ` (${variant})`} rendered without ` +
+        `required element(s): ${missing.join(', ')}. ` +
         'MVP_REFERENCE.md §2: no required element may silently disappear.',
     );
     this.name = 'MissingRequiredElementError';
+  }
+}
+
+export class UnknownSurfaceStateError extends Error {
+  readonly code = 'UNKNOWN_SURFACE_STATE';
+  readonly httpStatus = 500;
+  constructor(surfaceId: SurfaceId, variant: string) {
+    super(
+      `Surface ${surfaceId} declares no required elements for state "${variant}". ` +
+        'A new surface state names what it must still show before it can render.',
+    );
+    this.name = 'UnknownSurfaceStateError';
   }
 }
 
@@ -220,8 +250,22 @@ export class MissingRequiredElementError extends Error {
  * rename, which is the drift §2 names. Hierarchy and emphasis are reviewed
  * against the fixtures in §11, which no automated check can replace.
  */
-export function assertRequiredElementsPresent(id: SurfaceId, markup: string): void {
+export function assertRequiredElementsPresent(
+  id: SurfaceId,
+  markup: string,
+  variant?: string,
+): void {
   const surface = requireSurface(id);
-  const missing = surface.requiredElements.filter((element) => !markup.includes(element));
-  if (missing.length > 0) throw new MissingRequiredElementError(id, missing);
+
+  let required = surface.requiredElements;
+  if (variant !== undefined) {
+    // An unnamed state fails closed: a new surface state must declare what it
+    // still has to show, rather than inheriting an assert that cannot hold.
+    const variantElements = surface.stateVariants?.[variant];
+    if (variantElements === undefined) throw new UnknownSurfaceStateError(id, variant);
+    required = variantElements;
+  }
+
+  const missing = required.filter((element) => !markup.includes(element));
+  if (missing.length > 0) throw new MissingRequiredElementError(id, missing, variant);
 }

@@ -76,10 +76,23 @@ layer refuses those categories too. Two locks, not one.
 
 **`RESPONDER_NOTIFIED` is currently unreachable, on purpose.** See §10 item 1.
 
+**Required elements are state-aware rather than unconditional.** A surface
+legitimately changes its dominant action with state: once a QRF request is in
+flight, offering a second Deploy button would be wrong, so the request block
+takes that position. §2 still applies, so the in-flight home declares its own
+required elements and an unnamed state fails closed. Review found the first
+version of this asserting the deploy string unconditionally, which made the
+live in-flight home a 500 — see §12.
+
+**Chat availability is a union, not an optional reason.** "No threads and no
+reason" renders as an empty inbox, which implies working messaging. No released
+slice stores a thread, so the type makes that state unrepresentable instead of
+asking every caller to remember the reason.
+
 ## 4. Evidence
 
-`npm run verify` runs format check, lint, typecheck, and 630 tests (28 files),
-96 of them added by this slice. Integration tests run against PostgreSQL 17.
+`npm run verify` runs format check, lint, typecheck, and 639 tests (28 files),
+105 of them added by this slice. Integration tests run against PostgreSQL 17.
 
 | Invariant                                                                    | Evidence                         |
 | ---------------------------------------------------------------------------- | -------------------------------- |
@@ -114,6 +127,12 @@ layer refuses those categories too. Two locks, not one.
 | A category absent from the reference surface is refused outright             | same file                        |
 | The admin overview refuses a non-admin session                               | same file                        |
 | Chat states its own unavailability                                           | same file                        |
+| The veteran home renders while a QRF request is in flight                    | same file                        |
+| An in-flight home shows the request block and no second deploy action        | same file                        |
+| Every link the home and category surfaces render resolves, none 404          | same file                        |
+| An in-flight home keeps every other §5 landmark                              | `tests/unit/ui-surfaces.test.ts` |
+| A surface state that declares no required elements is refused                | same file                        |
+| An empty inbox cannot render without declaring messaging available           | same file                        |
 
 ## 5. Environment and configuration changes
 
@@ -182,3 +201,36 @@ record (§10 items 1, 3, and 4).
 The gate does **not** advance. Readiness is recorded in `STATUS.md` on accepted
 evidence rather than claimed by an implementation PR. No pilot or production
 operation is authorized. SPEC-018 remains the only path to go-live.
+
+## 12. Review findings addressed
+
+Three live-path defects were found in review of the first pushed SHA. All three
+passed CI, because in each case the fixtures never reached the failing state —
+which is itself the finding worth recording: a deterministic fixture proves only
+the state it pins.
+
+1. **`/app/home` returned 500 while a QRF request was in flight.** `VETERAN_HOME`
+   required the literal `Deploy QRF`, and the in-flight render legitimately
+   replaces that action with the request block, so `assertRequiredElementsPresent`
+   threw on a real veteran path. Fixed by making required elements state-aware:
+   the `QRF_IN_FLIGHT` state names its own landmarks, an unnamed state fails
+   closed, and the assert is not weakened. A fixture and an integration test now
+   cover the in-flight home.
+2. **The chat renderer could print an empty inbox.** The fixture called
+   `renderChat` with no unavailability reason, so it rendered "You have no
+   conversations yet" — implying working messaging that no released slice
+   provides. Fixed by making availability a union, so the state is unrepresentable
+   without a caller explicitly declaring messaging available. The fixture now
+   pins the same unavailable state the live route serves.
+3. **Unreleased category cards linked to an unregistered route.** Non-operational
+   cards pointed at `/app/resources/{label}/info`, which was never registered, so
+   Counseling, Activities, and Job Training were dead links from the veteran
+   home. Fixed by routing every card through the single registered handler, which
+   already decides what a non-operational category may show. An integration test
+   now walks every link the home and category surfaces render and fails on a 404,
+   which covers the class rather than the instance.
+
+Items the review raised and left standing, unchanged and already documented:
+forms posting to unwired command routes (§7), the responder dashboard's
+hardcoded availability and row category (§10 items 3 and 1), and accessibility
+covering only the decidable markup floor (§11).

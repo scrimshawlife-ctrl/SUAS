@@ -161,9 +161,10 @@ function categoryCard(card: CategoryCard, level: HeadingLevel): Renderable {
     a(
       {
         class: operational ? 'card' : 'card card-unavailable',
-        href: operational
-          ? `/app/resources/${card.label.toLowerCase().replace(/ /g, '-')}`
-          : `/app/resources/${card.label.toLowerCase().replace(/ /g, '-')}/info`,
+        // Operational and non-operational cards share one route. The handler
+        // decides what a category may show; a separate `/info` path would be a
+        // second place for that rule to live, and it was a 404.
+        href: `/app/resources/${card.label.toLowerCase().replace(/ /g, '-')}`,
       },
       cardHeading(level, card.label),
       operational
@@ -284,7 +285,13 @@ export function renderVeteranHome(model: VeteranHomeViewModel): string {
       categoryGrid(model.categories),
     ),
   ]);
-  return assertSurface('VETERAN_HOME', markup);
+  // An in-flight request replaces the deploy action with the request block, so
+  // the surface is asserted against that state's required elements (§7.2).
+  return assertSurface(
+    'VETERAN_HOME',
+    markup,
+    model.activeQrf === undefined ? undefined : 'QRF_IN_FLIGHT',
+  );
 }
 
 export function renderQrfRequest(model: QrfRequestViewModel): string {
@@ -461,16 +468,18 @@ export function renderActiveNeeds(model: ActiveNeedsViewModel): string {
 export function renderChat(model: ChatViewModel): string {
   const markup = document(model.shell, [
     h1({}, 'Chat'),
-    model.unavailableReason !== undefined
-      ? stateBlock('Unavailable', model.unavailableReason)
-      : model.threads.length === 0
-        ? p({ class: 'muted' }, 'You have no conversations yet.')
+    model.availability.status === 'UNAVAILABLE'
+      ? stateBlock('Unavailable', model.availability.reason)
+      : model.availability.threads.length === 0
+        ? // Reachable only once a caller declares messaging AVAILABLE, which
+          // no released slice can truthfully do yet.
+          p({ class: 'muted' }, 'You have no conversations yet.')
         : ul(
             { class: 'card-grid' },
-            model.threads.map((thread) =>
+            model.availability.threads.map((thread) =>
               li(
                 { class: 'card' },
-                h3({}, thread.counterpartLabel),
+                cardHeading(2, thread.counterpartLabel),
                 thread.lastMessagePreview === undefined
                   ? undefined
                   : p({ class: 'muted' }, thread.lastMessagePreview),
@@ -534,7 +543,7 @@ export function renderMobileNav(shell: ShellViewModel): string {
   return assertSurface('MOBILE_NAV', markup);
 }
 
-function assertSurface(id: SurfaceId, markup: string): string {
-  assertRequiredElementsPresent(id, markup);
+function assertSurface(id: SurfaceId, markup: string, variant?: string): string {
+  assertRequiredElementsPresent(id, markup, variant);
   return markup;
 }

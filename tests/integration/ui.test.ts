@@ -12,6 +12,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startApp, type StartedApp } from '../../src/app.js';
 import { createUser } from '../../src/identity/index.js';
 import { createResource, setResourceActive, verifyResource } from '../../src/fulfillment/index.js';
+import { createServiceRequest, openCase } from '../../src/coordination/index.js';
+import { withTransaction } from '../../src/db/index.js';
 import type { RecordingChallengeDelivery } from '../../src/auth/index.js';
 import { syntheticEmail } from '../../src/testing/fixture-boundary.js';
 import { auditAccessibility } from '../../src/ui/index.js';
@@ -34,10 +36,10 @@ function pool() {
 }
 
 /** Enrol a user and return a live session credential plus their tenant. */
-async function signIn(): Promise<{ credential: string; tenantId: string }> {
+async function signIn(): Promise<{ credential: string; tenantId: string; userId: string }> {
   const tenantId = randomUUID();
   const email = syntheticEmail(`veteran-${randomUUID().slice(0, 8)}`);
-  await createUser(pool(), { tenantId, email, status: 'ACTIVE' });
+  const user = await createUser(pool(), { tenantId, email, status: 'ACTIVE' });
 
   const issued = await app.server.inject({
     method: 'POST',
@@ -55,7 +57,11 @@ async function signIn(): Promise<{ credential: string; tenantId: string }> {
   });
   expect(verified.statusCode).toBe(201);
 
-  return { credential: verified.json().session_credential as string, tenantId };
+  return {
+    credential: verified.json().session_credential as string,
+    tenantId,
+    userId: user.userId,
+  };
 }
 
 function authorized(credential: string) {
@@ -109,6 +115,42 @@ describe('API.md §4 — authenticated surfaces require a session', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('Deploy QRF');
     expect(response.body).toContain('Immediate Resources');
+    expect(auditAccessibility(response.body)).toEqual([]);
+  });
+
+  it('serves the veteran home while a QRF request is in flight', async () => {
+    const { credential, tenantId, userId } = await signIn();
+
+    // The live 500: the in-flight home drops the Deploy QRF action, which the
+    // §5 required-element list demanded unconditionally.
+    await withTransaction(pool(), async (tx) => {
+      const opened = await openCase(tx, {
+        tenantId,
+        veteranUserId: userId,
+        actorType: 'VETERAN',
+        actorId: userId,
+      });
+      await createServiceRequest(tx, {
+        tenantId,
+        caseId: opened.supportCase.caseId,
+        category: 'PEER_SUPPORT',
+        createdBy: userId,
+        actorType: 'VETERAN',
+      });
+    });
+
+    const response = await app.server.inject({
+      method: 'GET',
+      url: '/app/home',
+      headers: authorized(credential),
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('Your QRF request');
+    expect(response.body).not.toContain('Deploy QRF');
+    // §7.2: a newly recorded request claims nothing beyond being recorded.
+    expect(response.body).toContain('REQUESTED');
+    expect(response.body).not.toContain('RESPONDER NOTIFIED');
     expect(auditAccessibility(response.body)).toEqual([]);
   });
 
@@ -223,6 +265,43 @@ describe('MVP_REFERENCE.md §8 — resource screens read the catalog', () => {
 
     expect(response.statusCode).toBe(409);
     expect(response.json().error.code).toBe('CATEGORY_NOT_OPERATIONAL');
+  });
+});
+
+describe('Every link a surface renders resolves to a registered route', () => {
+  /** Internal GET targets found in rendered markup, minus in-page anchors. */
+  function internalLinks(markup: string): string[] {
+    return [...markup.matchAll(/<a\b[^>]*\shref="(\/[^"#?]*)"/g)]
+      .map((match) => match[1] ?? '')
+      .filter((href) => href !== '');
+  }
+
+  it('serves every link on the veteran home and the category surface', async () => {
+    const { credential } = await signIn();
+
+    const pages = ['/app/home', '/app/resources'];
+    const seen = new Set<string>();
+    for (const page of pages) {
+      const rendered = await app.server.inject({
+        method: 'GET',
+        url: page,
+        headers: authorized(credential),
+      });
+      expect(rendered.statusCode, page).toBe(200);
+      for (const href of internalLinks(rendered.body)) seen.add(href);
+    }
+
+    // The unreleased-category cards pointed at an unregistered /info path, so
+    // Counseling, Activities, and Job Training were dead links from the home.
+    expect(seen.size).toBeGreaterThan(0);
+    for (const href of seen) {
+      const response = await app.server.inject({
+        method: 'GET',
+        url: href,
+        headers: authorized(credential),
+      });
+      expect(response.statusCode, `${href} is a dead link`).not.toBe(404);
+    }
   });
 });
 

@@ -137,6 +137,27 @@ export const VISUAL_FIXTURES: readonly VisualFixture[] = [
     }),
   ),
 
+  // The state the live /app/home serves once a request is in flight. Without
+  // this fixture the §5 required-element assert was never exercised against the
+  // in-flight home, and the route raised a 500 there.
+  fixture('veteran-home-qrf-in-flight', 'VETERAN_HOME', '§11.3 veteran home, QRF in flight', () =>
+    renderVeteranHome({
+      shell: shell({ title: 'Support', currentNav: 'HOME' }),
+      categories: CATEGORY_CARDS,
+      activeQrf: {
+        facts: {
+          requestStatus: 'MATCHING',
+          responderAssigned: false,
+          responderNotificationDelivered: false,
+          coordinationDegraded: false,
+          matchingExhausted: false,
+        },
+        authorizedVoicePath: false,
+        authorizedMessagePath: false,
+      },
+    }),
+  ),
+
   fixture('qrf-searching', 'QRF_REQUEST', '§11.4 QRF request/searching state', () =>
     renderQrfRequest({
       shell: shell({ title: 'QRF request' }),
@@ -295,10 +316,17 @@ export const VISUAL_FIXTURES: readonly VisualFixture[] = [
     { viewport: 'DESKTOP' },
   ),
 
-  fixture('chat-empty', 'CHAT', '§11.10 chat entry with no threads', () =>
+  fixture('chat-unavailable', 'CHAT', '§11.10 chat entry while messaging is unavailable', () =>
     renderChat({
       shell: shell({ title: 'Chat', currentNav: 'CHAT' }),
-      threads: [],
+      // Pins the state the live route actually serves. An AVAILABLE fixture
+      // would pin an empty inbox that no released slice can produce.
+      availability: {
+        status: 'UNAVAILABLE',
+        reason:
+          'Messaging is not available yet. Your responder will contact you through ' +
+          'the channels you have consented to.',
+      },
     }),
   ),
 
