@@ -33,3 +33,14 @@ Read `FABLE_HANDOFF.md` and `CONTEXT.md` first.
 Each SPEC-017 slice records released spec references, files/packages changed, tests/evidence, migration/environment changes, unavailable/manual-only boundaries touched, and any gap returned to specs.
 
 No code/config change may silently upgrade an `UNAVAILABLE`, `MANUAL_ONLY`, `INFORMATION_ONLY`, or `FUTURE` feature to production-operational behavior.
+
+## Cursor Cloud specific instructions
+
+Standard commands live in `README.md` (command table) and `package.json` scripts; prefer those. The notes below are non-obvious caveats for this cloud environment. The startup update script runs `npm ci` only; everything else below is a per-session/manual step.
+
+- Runtime: Node.js 22 (present) and PostgreSQL 17 (installed from the PGDG apt repo). The `suas` role (password `suas`) and the `suas_local`, `suas_test`, and `suas_migrations_test` databases already exist.
+- PostgreSQL is not managed by systemd here. Start it once per fresh VM boot before running migrations, tests, or the dev server: `sudo pg_ctlcluster 17 main start` (check with `pg_lsclusters`). `suas_local` is already migrated to the current schema version.
+- The app does NOT auto-load `.env`; it reads `process.env` directly. Before `npm run dev`, `npm run migrate`, or `npm run provenance`, export the file into the shell: `set -a; . ./.env; set +a` (or invoke node/tsx with `--env-file=.env`). Without this, startup fails closed listing every missing variable. `.env` already exists (git-ignored) with a generated `SUAS_SESSION_SECRET`; if missing, recreate it per the README "Local development" block.
+- Tests are self-contained: `tests/setup.ts` pins its own `SUAS_ENV=TEST` config and points at `suas_test` / `suas_migrations_test`, so `npm test`, `npm run test:unit`, and `npm run verify` run WITHOUT sourcing `.env` (but PostgreSQL must be running for anything beyond `test:unit`). The shared test DB is migrated automatically by the vitest global setup.
+- Dev server listens on `127.0.0.1:3000` (`SUAS_HTTP_HOST`/`SUAS_HTTP_PORT`). Public UI is under `/app`; the JSON API is under `/api/v0`. Authenticated surfaces require an `Authorization: Bearer <session-credential>` header (there is no cookie/UI session), so authenticated pages are not reachable by plain browser navigation.
+- In LOCAL/TEST the challenge-delivery channel is fake/sink, so OTP codes are never emitted or retrievable over HTTP; drive full login flows through the integration tests or by minting a session with the domain `createSession` helper against `suas_local` (synthetic data only — ENVIRONMENT.md §2).
