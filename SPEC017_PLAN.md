@@ -7,25 +7,29 @@
 
 ## Progress
 
-| Slice                                   | Status                       | Record                                                                                         |
-| --------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------- |
-| 1 — Foundation                          | `IMPLEMENTED`                | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md)                       |
-| 2 — Event/idempotency kernel            | `IMPLEMENTED`                | [docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md](docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md)         |
-| 3 — Identity / tenancy / authorization  | `IMPLEMENTED`                | [docs/slices/SLICE_03_IDENTITY_TENANCY.md](docs/slices/SLICE_03_IDENTITY_TENANCY.md)           |
-| 4 — Consent and privacy kernel          | `IMPLEMENTED`                | [docs/slices/SLICE_04_CONSENT_PRIVACY.md](docs/slices/SLICE_04_CONSENT_PRIVACY.md)             |
-| 5 — Coordination kernel                 | `IMPLEMENTED`                | [docs/slices/SLICE_05_COORDINATION.md](docs/slices/SLICE_05_COORDINATION.md)                   |
-| 6 — Follow-Up / Settlement              | `IMPLEMENTED`                | [docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md](docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md)     |
-| 7 — Resources / fulfillment             | `IMPLEMENTED (manual paths)` | [docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md](docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md) |
-| 8 — Notifications                       | `IMPLEMENTED`                | [docs/slices/SLICE_08_NOTIFICATIONS.md](docs/slices/SLICE_08_NOTIFICATIONS.md)                 |
-| 9 — Check-In / Support Signal interface | `NOT_STARTED`                | —                                                                                              |
-| 10 — MVP-reference UI                   | `NOT_STARTED`                | —                                                                                              |
-| 11 — Scale / resilience harness         | `NOT_STARTED`                | —                                                                                              |
+| Slice                                   | Status                         | Record                                                                                         |
+| --------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| 1 — Foundation                          | `IMPLEMENTED`                  | [docs/slices/SLICE_01_FOUNDATION.md](docs/slices/SLICE_01_FOUNDATION.md)                       |
+| 2 — Event/idempotency kernel            | `IMPLEMENTED`                  | [docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md](docs/slices/SLICE_02_EVENT_IDEMPOTENCY.md)         |
+| 3 — Identity / tenancy / authorization  | `IMPLEMENTED`                  | [docs/slices/SLICE_03_IDENTITY_TENANCY.md](docs/slices/SLICE_03_IDENTITY_TENANCY.md)           |
+| 4 — Consent and privacy kernel          | `IMPLEMENTED`                  | [docs/slices/SLICE_04_CONSENT_PRIVACY.md](docs/slices/SLICE_04_CONSENT_PRIVACY.md)             |
+| 5 — Coordination kernel                 | `IMPLEMENTED`                  | [docs/slices/SLICE_05_COORDINATION.md](docs/slices/SLICE_05_COORDINATION.md)                   |
+| 6 — Follow-Up / Settlement              | `IMPLEMENTED`                  | [docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md](docs/slices/SLICE_06_FOLLOWUP_SETTLEMENT.md)     |
+| 7 — Resources / fulfillment             | `IMPLEMENTED (manual paths)`   | [docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md](docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md) |
+| 8 — Notifications                       | `IMPLEMENTED`                  | [docs/slices/SLICE_08_NOTIFICATIONS.md](docs/slices/SLICE_08_NOTIFICATIONS.md)                 |
+| 9 — Check-In / Support Signal interface | `IMPLEMENTED (interface only)` | [docs/slices/SLICE_09_CHECKINS_SIGNALS.md](docs/slices/SLICE_09_CHECKINS_SIGNALS.md)           |
+| 10 — MVP-reference UI                   | `NOT_STARTED`                  | —                                                                                              |
+| 11 — Scale / resilience harness         | `NOT_STARTED`                  | —                                                                                              |
 
-Slices 1-8 returned fifty-six semantic/mechanism questions to specs; see the gaps section
+Slices 1-9 returned sixty-three semantic/mechanism questions to specs; see the gaps section
 of each record. Each slice has closed the seam the previous one left, except one.
 No readiness gate has advanced, and production remains blocked until SPEC-018.
 
-**The one unclosed gap is now load-bearing.** v0.1.1 releases no per-capability
+**Two unclosed gaps are now load-bearing.** D-011 blocks all Support Signal
+scoring the same way: the engine contract, versioning, determinism, and settlement
+are built and tested against a labelled unreleased fixture, and the registry ships
+empty (Slice 9 §10 item 1).
+v0.1.1 releases no per-capability
 provider disclosure projection (Slice 4 §10 item 1, Slice 7 §10 item 1). Manual
 coordination — which the release makes first-class — works end to end. Every
 externally-transmitting adapter path fails closed, proven by test. The router,
