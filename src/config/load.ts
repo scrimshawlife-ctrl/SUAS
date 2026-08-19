@@ -77,6 +77,11 @@ export function describeConfig(config: SuasConfig): Record<string, string | numb
     shelter_adapter_mode: config.adapters.shelter,
     food_adapter_mode: config.adapters.food,
     peer_support_adapter_mode: config.adapters.peerSupport,
+    uber_guest_rides_configured:
+      config.adapters.uberGuestRides.clientId !== undefined &&
+      config.adapters.uberGuestRides.clientSecret !== undefined &&
+      config.adapters.uberGuestRides.tokenUrl !== undefined &&
+      config.adapters.uberGuestRides.apiBaseUrl !== undefined,
     support_signal_mode: config.supportSignalMode,
     safety_copy_mode: config.safetyCopyMode,
     sensitive_aggregate_reporting: config.sensitiveAggregateReporting,

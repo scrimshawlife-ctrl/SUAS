@@ -84,3 +84,18 @@ export {
   type ReferralStatus,
   type SendReferralResult,
 } from './referrals.js';
+export { createFulfillmentAdapterRegistry } from './registry.js';
+export {
+  UberGuestRidesAdapter,
+  UberGuestRidesOAuthTokenProvider,
+  UberGuestRidesProviderError,
+  normalizeUberRideStatus,
+  projectionToUberTripDto,
+  translateUberWebhookPayload,
+  verifyUberWebhookHmac,
+  type FetchTransport,
+  type OAuthTokenProvider,
+  type UberGuestRidesConfig,
+  type UberRideProjection,
+  type UberTripDto,
+} from './uber-guest-rides.js';

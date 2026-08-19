@@ -30,7 +30,7 @@ export const COMMUNICATION_MODES = ['disabled', 'fake', 'sink'] as const;
 export type CommunicationMode = (typeof COMMUNICATION_MODES)[number];
 
 /** ENVIRONMENT.md §3 "Fulfillment adapters". Real adapter modes require D-017–D-020. */
-export const ADAPTER_MODES = ['manual', 'fake', 'disabled'] as const;
+export const ADAPTER_MODES = ['manual', 'fake', 'disabled', 'uber_guest_rides'] as const;
 export type AdapterMode = (typeof ADAPTER_MODES)[number];
 
 /** ENVIRONMENT.md §3 "Support Signal / safety / reporting". */
@@ -171,6 +171,11 @@ const rawConfigSchema = z.object({
     ADAPTER_MODES,
     'A real adapter mode requires the corresponding D-017–D-020 decision and a released manifest update.',
   ),
+  SUAS_UBER_GUEST_RIDES_CLIENT_ID: optionalRaw,
+  SUAS_UBER_GUEST_RIDES_CLIENT_SECRET: optionalRaw,
+  SUAS_UBER_GUEST_RIDES_TOKEN_URL: optionalRaw,
+  SUAS_UBER_GUEST_RIDES_API_BASE_URL: optionalRaw,
+  SUAS_UBER_GUEST_RIDES_WEBHOOK_SECRET: optionalRaw,
 
   // --- Support Signal / safety / reporting. ENVIRONMENT.md §3, §5. ---
   SUAS_SUPPORT_SIGNAL_MODE: requiredEnum(
@@ -226,6 +231,13 @@ export interface SuasConfig {
     readonly shelter: AdapterMode;
     readonly food: AdapterMode;
     readonly peerSupport: AdapterMode;
+    readonly uberGuestRides: {
+      readonly clientId: string | undefined;
+      readonly clientSecret: string | undefined;
+      readonly tokenUrl: string | undefined;
+      readonly apiBaseUrl: string | undefined;
+      readonly webhookSecret: string | undefined;
+    };
   };
   readonly supportSignalMode: SupportSignalMode;
   readonly safetyCopyMode: SafetyCopyMode;
@@ -441,6 +453,13 @@ export function shapeConfig(
       shelter: raw.SUAS_SHELTER_ADAPTER_MODE,
       food: raw.SUAS_FOOD_ADAPTER_MODE,
       peerSupport: raw.SUAS_PEER_SUPPORT_ADAPTER_MODE,
+      uberGuestRides: {
+        clientId: raw.SUAS_UBER_GUEST_RIDES_CLIENT_ID,
+        clientSecret: raw.SUAS_UBER_GUEST_RIDES_CLIENT_SECRET,
+        tokenUrl: raw.SUAS_UBER_GUEST_RIDES_TOKEN_URL,
+        apiBaseUrl: raw.SUAS_UBER_GUEST_RIDES_API_BASE_URL,
+        webhookSecret: raw.SUAS_UBER_GUEST_RIDES_WEBHOOK_SECRET,
+      },
     },
     supportSignalMode: raw.SUAS_SUPPORT_SIGNAL_MODE,
     safetyCopyMode: raw.SUAS_SAFETY_COPY_MODE,
