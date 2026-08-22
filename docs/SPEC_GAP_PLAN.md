@@ -95,9 +95,11 @@ Wave F  draft Rev 3 (islands)           ← defer
 
 ---
 
-### Wave A — Spec hygiene (no new product decision)
+### Wave A — Spec hygiene (no new product decision) — **IN FLIGHT**
 
-**Goal:** Make already-decided rules readable in the files implementers open first. Target: a small `0.1.6` (or next patch) editorial release.
+**Goal:** Make already-decided rules readable in the files implementers open first. Target: a small `0.1.6` editorial release.
+
+**Drafted** on `SUAS-specs` `cursor/spec-0.1.6-wave-a-hygiene-1036` as `RELEASE_MANIFEST-0.1.6.md`. Lifecycle is owner-controlled: **do not re-pin** `src/release/pins.ts` until that specs PR is merged. G-I-4 is **not** in the draft (no `ServiceOffer`/`ProviderOffer` join exists in this repo to transcribe).
 
 | ID | Close | Spec files | Owner input needed? |
 | --- | --- | --- | --- |
@@ -235,7 +237,7 @@ Smallest set that unblocks the most *product* (not hosting):
 
 | Priority | Item | Why this next |
 | --- | --- | --- |
-| 1 | **Wave A** (G-III-2, leftover headers) | Hours of spec-reading confusion; no values to invent |
+| 1 | **Wave A** (G-III-2, leftover headers) | **Drafted** as specs `0.1.6` (`cursor/spec-0.1.6-wave-a-hygiene-1036`). Owner merge required before re-pin. |
 | 2 | **Wave B — D-011** (+ G-I-28 action) | Only remaining load-bearing SPEC-017 gap |
 | 3 | **Wave C1** (G-I-6/7/8) | Stops fulfillment edge-case invention |
 | 4 | **Wave D — D-019/D-020** (or “manual through pilot”) | Completes capability-port story |
@@ -249,7 +251,7 @@ Smallest set that unblocks the most *product* (not hosting):
 
 - Canonical repo for Waves A–F spec text: `scrimshawlife-ctrl/SUAS-specs`. This repo only re-pins after a specs merge.
 - Do not encode Wave B–E values in implementation first. D-012 was the opposite order (decision then code) and is the pattern to keep.
-- Wave A *may* be drafted as editorial without new owner values (D-015/D-016 text already decided).
+- Wave A is drafted as editorial `0.1.6` (no new owner values). Owner-merge the specs PR, then re-pin this repo. Do not treat the draft branch as released authority.
 - After any specs merge: update `src/release/pins.ts`, `.env.example`, `tests/helpers/env.ts`, `tests/setup.ts`, `.github/workflows/verify.yml`, and the handoff docs together.
 - Catalog hygiene: when a wave merges, mark the gap `RESOLVED` in `docs/SPEC_DESIGN_GAPS.md` the way G-III-1 / D-012 were marked.
 
