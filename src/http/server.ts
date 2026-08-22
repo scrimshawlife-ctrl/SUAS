@@ -119,7 +119,11 @@ export function createServer(deps: ServerDependencies): FastifyInstance {
   if (pool !== undefined) {
     // MVP_REFERENCE.md §5 reference surfaces. Mounted under /app rather than
     // the API prefix; see routes/ui.ts.
-    registerUiRoutes(app, { pool, sessionSecret: deps.config.sessionSecret });
+    registerUiRoutes(app, {
+      pool,
+      sessionSecret: deps.config.sessionSecret,
+      safetyCopyMode: deps.config.safetyCopyMode,
+    });
   }
 
   if (pool !== undefined && deps.challengeDelivery !== undefined && deps.mfa !== undefined) {

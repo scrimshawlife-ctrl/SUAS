@@ -1,15 +1,15 @@
-# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.4 handoff
+# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.5 handoff
 
 **Status:** `ACTIVE`  
-**Released specification:** `0.1.4`  
+**Released specification:** `0.1.5`  
 **Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`  
 **Current stage:** `SPEC-017`
 
 ## Canonical source
 
-- Specs release merge: `b4baad3fc39af36e22df9fd3bc3f523392f19a2e`
-- Release manifest: `RELEASE_MANIFEST-0.1.4.md`
-- Release decision ledger: `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise
+- Specs release merge: `e8a7d4cc4c409ff00fef115a8b3f5cec9f9b5861`
+- Release manifest: `RELEASE_MANIFEST-0.1.5.md`
+- Release decision ledger: `RELEASE_DECISIONS-0.1.5.md` (D-012); `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise
 - Handoff: `HANDOFF.md`
 - Environment contract: `ENVIRONMENT.md`
 
@@ -42,4 +42,4 @@ LOCAL/TEST/STAGING are synthetic-only and real-external-effect forbidden under `
 
 ## Definition of SPEC-017 start
 
-Implementation begins with Slice 1 against v0.1.4 and records conformance evidence per slice. SPEC-017 completion still does not authorize production; SPEC-018 remains the go/no-go stage.
+Implementation begins with Slice 1 against the pinned released stack and records conformance evidence per slice. SPEC-017 completion still does not authorize production; SPEC-018 remains the go/no-go stage.

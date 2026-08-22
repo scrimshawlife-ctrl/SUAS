@@ -6,6 +6,12 @@
 **Stage:** `SPEC-017`
 **Production/pilot readiness:** `NOT_READY` (unchanged by this slice)
 
+**Later authority (v0.1.5):** D-012 is `DECIDED`. The crisis slot still occupies
+the same placement; `SUAS_SAFETY_COPY_MODE=approved` now renders `SAFETY_COPY.md`
+(911 / 988). TEST/CI remain on `placeholder_test_only`, which is the behavior
+this record originally proved. The historical "no crisis copy is shipped"
+sentence below describes the slice as built against `0.1.1`, not the current pin.
+
 Scope is `SPEC017_PLAN.md` Slice 10: veteran, responder/QRF, resource, chat, and
 admin surfaces with truthful pending/no-availability states, a WCAG target, and
 deterministic visual fixtures.
@@ -172,7 +178,7 @@ value. The `UI_CONFORMANCE` gate does **not** advance — see §11.
 2. **`contact_method` is unstructured, so §8's direct actions are not implementable.** §8 asks for "direct phone/email/web actions where allowed", but `RESOURCES.md` §6 releases `contact_method` as a single free-text field. The catalog does not record whether a value is a number, an address, or a URL, so the row renders the value as recorded and offers no action. Releasing structured contact fields, or a scheme discriminator, closes this.
 3. **There is no responder on-duty/availability store.** §9.1 makes on-duty "a primary responder control/state", and §5 lists a responder availability surface, but no released slice or table records availability. The surface renders and the control posts to an unwired route; the displayed state reflects nothing. A canonical availability fact is needed.
 4. **There is no chat or message thread domain.** §5 requires a persistent Chat entry and §11 requires a chat fixture. Nothing in the released stack stores a thread or a message. The surface exists and states its unavailability rather than rendering an empty inbox that implies messaging works. `NOTIFICATIONS.md` covers outbound sends, not conversation.
-5. **D-012 blocks the immediate-resource copy.** The slot renders in its reference position with a placeholder, per `SAFETY.md` §2 and §9. Nothing else in this slice is blocked by it, but the veteran-facing crisis path cannot exist until D-012 closes.
+5. **D-012 blocked the immediate-resource copy at slice time.** The slot rendered in its reference position with a placeholder, per `SAFETY.md` §2 and §9 as of `0.1.1`. **Closed in v0.1.5:** `SUAS_SAFETY_COPY_MODE=approved` now renders `SAFETY_COPY.md`.
 6. **The four reference metrics have no definitions.** §9 permits `Responses`, `Rating`, `This Month`, and `Avg Response` only with exact definitions and data. None are released, so all render as not computable.
 7. **The visual reference is a live URL, not a pinned artifact.** §11 asks each fixture to record "reference source/revision/observation date", and `MVP_REFERENCE.md` §4 gives a URL plus an observation date of 2026-08-18 PT. A live site can change under the implementation, and no pinned snapshot or captured baseline is released. The fixtures record the observation date, but there is nothing immutable to compare against. A committed reference capture would make §11's comparison meaningful.
 8. **Screenshot comparison has no released tooling or baseline.** §11 says "repeatable screenshot/reference comparison". This slice supplies the deterministic input — fixed view models, fixed markup, no clock or network — but captures no images and performs no comparison. That step needs a released baseline (item 7) and a human reviewer.

@@ -1,6 +1,6 @@
 # SPEC017_PLAN.md — Implementation conformance plan for SUAS v0.1.1
 
-**Released spec:** `0.1.4` (plan opened against `0.1.1`; the runtime now pins `0.1.4` — `src/release/pins.ts`, `RELEASE_MANIFEST-0.1.4.md`)  
+**Released spec:** `0.1.5` (plan opened against `0.1.1`; the runtime now pins `0.1.5` — `src/release/pins.ts`, `RELEASE_MANIFEST-0.1.5.md`)  
 **Status:** `IN_PROGRESS`  
 **Implementation repository:** `scrimshawlife-ctrl/SUAS`  
 **Canonical specs:** `scrimshawlife-ctrl/SUAS-specs`
@@ -28,8 +28,9 @@ No readiness gate has advanced, and production remains blocked until SPEC-018.
 **The load-bearing gap is now D-011.** It blocks all Support Signal scoring: the
 engine contract, versioning, determinism, and settlement are built and tested
 against a labelled unreleased fixture, and the registry ships empty (Slice 9 §10
-item 1). D-012 (approved safety/crisis copy) likewise stays `DECISION_PENDING`, so
-the veteran-facing crisis slot renders a labelled placeholder only.
+item 1). D-012 (approved safety/crisis copy) is `DECIDED` as of v0.1.5
+(`SAFETY_COPY.md`); the veteran-facing crisis slot renders the released 911/988
+copy when `SUAS_SAFETY_COPY_MODE=approved` and a labelled placeholder otherwise.
 
 Per-capability provider disclosure is no longer globally absent. v0.1.2 closed
 D-017 (Uber selected behind `TransportationPort`) and v0.1.3 closed D-018 (Amadeus
@@ -47,7 +48,7 @@ No readiness gate has advanced, and production remains blocked until SPEC-018.
 
 ## Objective
 
-Build SUAS against the released v0.1.4 contracts and continuously prove conformance without upgrading any production-unavailable release feature by implication.
+Build SUAS against the released v0.1.5 contracts and continuously prove conformance without upgrading any production-unavailable release feature by implication.
 
 ## Slice 1 — Foundation
 
@@ -113,4 +114,4 @@ Each slice includes:
 
 ## SPEC-017 completion
 
-SPEC-017 completes only when the built implementation is audited against the entire released v0.1.4 cut and all material gaps are fixed or returned to specs. SPEC-018 remains required before any real pilot or production operation.
+SPEC-017 completes only when the built implementation is audited against the entire released v0.1.5 cut and all material gaps are fixed or returned to specs. SPEC-018 remains required before any real pilot or production operation.

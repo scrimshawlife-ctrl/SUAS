@@ -43,7 +43,7 @@ export type AdapterMode = (typeof ADAPTER_MODES)[number];
 export const SUPPORT_SIGNAL_MODES = ['disabled', 'fixture'] as const;
 export type SupportSignalMode = (typeof SUPPORT_SIGNAL_MODES)[number];
 
-export const SAFETY_COPY_MODES = ['placeholder_test_only', 'disabled'] as const;
+export const SAFETY_COPY_MODES = ['placeholder_test_only', 'approved', 'disabled'] as const;
 export type SafetyCopyMode = (typeof SAFETY_COPY_MODES)[number];
 
 export const SENSITIVE_AGGREGATE_REPORTING_MODES = ['disabled'] as const;
@@ -196,7 +196,7 @@ const rawConfigSchema = z.object({
   SUAS_SAFETY_COPY_MODE: requiredEnum(
     'SUAS_SAFETY_COPY_MODE',
     SAFETY_COPY_MODES,
-    'Official safety/crisis copy is unavailable while D-012 is unresolved; "placeholder_test_only" is never production authority.',
+    '"approved" (D-012, SAFETY_COPY.md v0.1.5) renders the released crisis copy/destinations; "placeholder_test_only" renders the reserved placeholder and is never production authority.',
   ),
   SUAS_SENSITIVE_AGGREGATE_REPORTING: requiredEnum(
     'SUAS_SENSITIVE_AGGREGATE_REPORTING',
@@ -406,13 +406,13 @@ export const configSchema = rawConfigSchema.superRefine((raw, ctx) => {
   }
 
   // HANDOFF.md §2 "Production deployment: prohibited";
-  // RELEASE_MANIFEST-0.1.4.md "Readiness boundary".
+  // RELEASE_MANIFEST-0.1.5.md "Readiness boundary".
   if (environment === 'PRODUCTION' && !SPEC_018_PRODUCTION_AUTHORIZED) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message:
         'SUAS_ENV=PRODUCTION is rejected: production deployment is prohibited until SPEC-018 ' +
-        'records launch-readiness evidence (HANDOFF.md §2; RELEASE_MANIFEST-0.1.4.md "Readiness boundary").',
+        'records launch-readiness evidence (HANDOFF.md §2; RELEASE_MANIFEST-0.1.5.md "Readiness boundary").',
     });
   }
 

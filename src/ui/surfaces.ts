@@ -41,7 +41,17 @@ import {
 } from './html.js';
 import { assertRequiredElementsPresent, type SurfaceId } from './contract.js';
 import { contactAffordances, presentQrfState } from './qrf.js';
-import { resolveImmediateResourceSlot } from './safety.js';
+import {
+  CRISIS_BANNER_COMPACT,
+  CRISIS_ENTRY_DANGER,
+  CRISIS_ENTRY_HEADING,
+  CRISIS_ENTRY_LIFELINE,
+  CRISIS_ENTRY_NOT_EMERGENCY,
+  CRISIS_FOOTER,
+  resolveImmediateResourceSlot,
+  type ImmediateResourceSlot,
+} from './safety.js';
+import type { SafetyCopyMode } from '../config/index.js';
 import { STYLESHEET } from './theme.js';
 import type {
   ActiveNeedsViewModel,
@@ -122,23 +132,37 @@ function stateBlock(label_: string, headline: string, detail?: string): Renderab
 /**
  * The reserved immediate-resource slot.
  *
- * §7.3 keeps the placement; SAFETY.md §2 keeps the wording out. Rendered as a
- * visible reserved region rather than an omission, so the absence is legible.
+ * §7.3 keeps the placement. In `approved` mode the slot renders the D-012
+ * wording from SAFETY_COPY.md §1.1 / §2; any other mode stays a labelled
+ * placeholder so an un-opted-in environment never shows a crisis destination.
  */
-export function immediateResources(): Renderable {
-  const slot = resolveImmediateResourceSlot();
+export function immediateResources(mode: SafetyCopyMode = 'placeholder_test_only'): Renderable {
+  const slot = resolveImmediateResourceSlot(mode);
   return section(
     { 'aria-labelledby': 'immediate-resources' },
     h2({ id: 'immediate-resources' }, 'Immediate Resources'),
     slot.state === 'PLACEHOLDER'
       ? div({ class: 'reserved-slot' }, p({}, slot.placeholder ?? ''))
-      : ul(
-          { class: 'card-grid' },
-          slot.resources.map((resource) =>
-            li({}, a({ class: 'card', href: resource.destination }, resource.label)),
-          ),
-        ),
+      : approvedCrisisCopy(slot),
   );
+}
+
+/** SAFETY_COPY.md §1.1 + §2.1 + §2.3 — approved crisis copy, verbatim. */
+function approvedCrisisCopy(slot: ImmediateResourceSlot): Renderable {
+  return [
+    p({ class: 'crisis-banner' }, CRISIS_BANNER_COMPACT),
+    h3({}, CRISIS_ENTRY_HEADING),
+    p({}, CRISIS_ENTRY_DANGER),
+    p({}, CRISIS_ENTRY_NOT_EMERGENCY),
+    p({}, CRISIS_ENTRY_LIFELINE),
+    ul(
+      { class: 'card-grid' },
+      slot.resources.map((resource) =>
+        li({}, a({ class: 'card action', href: resource.destination }, resource.label)),
+      ),
+    ),
+    p({ class: 'muted' }, CRISIS_FOOTER),
+  ];
 }
 
 /**
@@ -279,7 +303,7 @@ export function renderVeteranHome(model: VeteranHomeViewModel): string {
         : qrfCard(model.activeQrf),
     ),
     // §3.5 / §5: immediate resources sit above the broader catalog.
-    immediateResources(),
+    immediateResources(model.safetyCopyMode),
     section(
       { 'aria-labelledby': 'categories' },
       h2({ id: 'categories' }, 'Find help'),
@@ -300,8 +324,11 @@ export function renderQrfRequest(model: QrfRequestViewModel): string {
   return assertSurface('QRF_REQUEST', markup);
 }
 
-export function renderImmediateResources(shell: ShellViewModel): string {
-  const markup = document(shell, [h1({}, 'Immediate Resources'), immediateResources()]);
+export function renderImmediateResources(
+  shell: ShellViewModel,
+  mode: SafetyCopyMode = 'placeholder_test_only',
+): string {
+  const markup = document(shell, [h1({}, 'Immediate Resources'), immediateResources(mode)]);
   return assertSurface('IMMEDIATE_RESOURCES', markup);
 }
 

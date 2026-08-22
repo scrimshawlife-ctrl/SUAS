@@ -11,8 +11,12 @@ import {
   assertRequiredElementsPresent,
   auditAccessibility,
   CATEGORY_CARDS,
+  containsForbiddenCrisisPhrase,
+  CRISIS_ENTRY_HEADING,
+  CRISIS_ENTRY_NOT_EMERGENCY,
   MissingRequiredElementError,
   renderChat,
+  renderImmediateResources,
   renderResourceList,
   renderResponderDashboard,
   renderVeteranHome,
@@ -127,6 +131,45 @@ describe('MVP_REFERENCE.md §7.2 — the veteran home is truthful about QRF', ()
 
   it('places immediate resources above the broader catalog', () => {
     expect(markup.indexOf('Immediate Resources')).toBeLessThan(markup.indexOf('Find help'));
+  });
+
+  it('keeps the default crisis slot as a placeholder', () => {
+    expect(markup).toContain('not available in this build');
+    expect(markup).not.toMatch(/\b988\b/);
+  });
+});
+
+describe('SAFETY_COPY.md §1 / MVP_REFERENCE.md §7.3 — approved crisis copy', () => {
+  const approvedHome = renderVeteranHome({
+    shell,
+    categories: CATEGORY_CARDS,
+    safetyCopyMode: 'approved',
+  });
+  const approvedSlot = renderImmediateResources(shell, 'approved');
+
+  it('renders the released 911/988 actions as tel: destinations', () => {
+    for (const page of [approvedHome, approvedSlot]) {
+      expect(page).toContain('href="tel:911"');
+      expect(page).toContain('href="tel:988"');
+      expect(page).toContain('Call 911');
+      expect(page).toContain('Call or text 988');
+    }
+  });
+
+  it('renders the released crisis-entry wording', () => {
+    expect(approvedSlot).toContain(CRISIS_ENTRY_HEADING);
+    expect(approvedSlot).toContain(CRISIS_ENTRY_NOT_EMERGENCY);
+    expect(approvedSlot).toContain('988 Suicide &amp; Crisis Lifeline');
+  });
+
+  it('does not emit a forbidden crisis phrase', () => {
+    expect(containsForbiddenCrisisPhrase(approvedHome)).toBeUndefined();
+    expect(containsForbiddenCrisisPhrase(approvedSlot)).toBeUndefined();
+  });
+
+  it('stays accessible in approved mode', () => {
+    expect(auditAccessibility(approvedHome)).toEqual([]);
+    expect(auditAccessibility(approvedSlot)).toEqual([]);
   });
 });
 

@@ -36,21 +36,26 @@ function pool() {
 }
 
 /** Enrol a user and return a live session credential plus their tenant. */
-async function signIn(): Promise<{ credential: string; tenantId: string; userId: string }> {
+async function signIn(
+  target: StartedApp = app,
+): Promise<{ credential: string; tenantId: string; userId: string }> {
+  const targetPool = target.pool;
+  if (targetPool === undefined) throw new Error('The test app has no database pool.');
+
   const tenantId = randomUUID();
   const email = syntheticEmail(`veteran-${randomUUID().slice(0, 8)}`);
-  const user = await createUser(pool(), { tenantId, email, status: 'ACTIVE' });
+  const user = await createUser(targetPool, { tenantId, email, status: 'ACTIVE' });
 
-  const issued = await app.server.inject({
+  const issued = await target.server.inject({
     method: 'POST',
     url: '/api/v0/auth/challenges',
     payload: { tenant_id: tenantId, destination: email, method: 'EMAIL_OTP' },
   });
   expect(issued.statusCode).toBe(202);
 
-  const delivery = app.challengeDelivery as RecordingChallengeDelivery;
+  const delivery = target.challengeDelivery as RecordingChallengeDelivery;
   const code = delivery.lastFor(email.toLowerCase())?.secret ?? '';
-  const verified = await app.server.inject({
+  const verified = await target.server.inject({
     method: 'POST',
     url: '/api/v0/auth/challenges/commands/verify',
     payload: { tenant_id: tenantId, destination: email, code },
@@ -166,6 +171,32 @@ describe('API.md §4 — authenticated surfaces require a session', () => {
     expect(response.body).toContain('Immediate Resources');
     expect(response.body).toContain('not available in this build');
     expect(response.body).not.toMatch(/\b988\b/);
+  });
+
+  it('renders the D-012 911/988 copy when SUAS_SAFETY_COPY_MODE=approved', async () => {
+    const approved = await startApp({
+      env: validEnv({ SUAS_MIGRATIONS_MODE: 'apply', SUAS_SAFETY_COPY_MODE: 'approved' }),
+      listen: false,
+    });
+    try {
+      const { credential } = await signIn(approved);
+      const response = await approved.server.inject({
+        method: 'GET',
+        url: '/app/immediate-resources',
+        headers: authorized(credential),
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toContain('Need help right now?');
+      expect(response.body).toContain('not an emergency service');
+      expect(response.body).toContain('href="tel:911"');
+      expect(response.body).toContain('href="tel:988"');
+      expect(response.body).toContain('Call 911');
+      expect(response.body).toContain('Call or text 988');
+      expect(auditAccessibility(response.body)).toEqual([]);
+    } finally {
+      await approved.close();
+    }
   });
 });
 

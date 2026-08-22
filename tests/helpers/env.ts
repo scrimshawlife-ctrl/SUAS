@@ -12,8 +12,8 @@ import type { ConfigSource } from '../../src/config/index.js';
 export function validEnv(overrides: ConfigSource = {}): ConfigSource {
   return {
     SUAS_ENV: 'TEST',
-    SUAS_SPEC_VERSION: '0.1.4',
-    SUAS_RELEASE_MANIFEST: 'RELEASE_MANIFEST-0.1.4.md',
+    SUAS_SPEC_VERSION: '0.1.5',
+    SUAS_RELEASE_MANIFEST: 'RELEASE_MANIFEST-0.1.5.md',
     SUAS_ALLOW_REAL_EXTERNAL_EFFECTS: 'false',
     DATABASE_URL: 'postgresql://suas:suas@localhost:5432/suas_test',
     DATABASE_POOL_MAX: '5',

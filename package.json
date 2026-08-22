@@ -2,7 +2,7 @@
   "name": "suas",
   "version": "0.1.0",
   "private": true,
-  "description": "SUAS implementation — conforms to SUAS-specs released stack 0.1.4",
+  "description": "SUAS implementation — conforms to SUAS-specs released stack 0.1.5",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
