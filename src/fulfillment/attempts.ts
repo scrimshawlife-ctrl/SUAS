@@ -327,6 +327,32 @@ export class ConfirmationReasonRequiredError extends Error {
   }
 }
 
+/**
+ * Fulfillment states from which confirmation is refused.
+ *
+ * FULFILLMENT.md §6: "a dispute moves to DISPUTED and never to CONFIRMED." A
+ * cancelled or failed fulfillment likewise never represents a delivered service,
+ * so none of these may be flipped to CONFIRMED.
+ */
+export const NON_CONFIRMABLE_FULFILLMENT_STATES: readonly FulfillmentState[] = [
+  'DISPUTED',
+  'CANCELLED',
+  'FAILED',
+];
+
+export class FulfillmentNotConfirmableError extends Error {
+  readonly code = 'UNPROCESSABLE';
+  readonly httpStatus = 422;
+
+  constructor(state: FulfillmentState) {
+    super(
+      `A fulfillment in state "${state}" cannot be confirmed: a disputed, cancelled, or failed ` +
+        `fulfillment never becomes CONFIRMED (SUAS-specs FULFILLMENT.md §6).`,
+    );
+    this.name = 'FulfillmentNotConfirmableError';
+  }
+}
+
 export async function upsertFulfillment(
   tx: Queryable,
   input: {
@@ -391,6 +417,24 @@ export async function confirmFulfillment(
   if (!veteran && !responder) throw new ConfirmationActorRequiredError();
   if (!veteran && responder && (input.reason === undefined || input.reason.trim() === '')) {
     throw new ConfirmationReasonRequiredError();
+  }
+
+  // FULFILLMENT.md §6: a disputed/cancelled/failed fulfillment never becomes
+  // CONFIRMED. The state is locked and checked at mutation time — the UPDATE
+  // below has no state predicate of its own, so without this guard a DISPUTED
+  // fulfillment could be silently flipped to CONFIRMED.
+  const current = await tx.query<{ state: FulfillmentState }>(
+    `SELECT state FROM service_fulfillments
+     WHERE tenant_id = $1 AND service_request_id = $2
+     FOR UPDATE`,
+    [input.tenantId, input.serviceRequestId],
+  );
+  const currentRow = current.rows[0];
+  if (currentRow === undefined) {
+    throw new Error('No service fulfillment to confirm for this Service Request.');
+  }
+  if (NON_CONFIRMABLE_FULFILLMENT_STATES.includes(currentRow.state)) {
+    throw new FulfillmentNotConfirmableError(currentRow.state);
   }
 
   const result = await tx.query<FulfillmentRow>(
