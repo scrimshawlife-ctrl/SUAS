@@ -31,8 +31,8 @@ describe('valid configuration', () => {
   it('accepts a released-conformant TEST configuration', () => {
     const config = loadConfig(validEnv());
     expect(config.environment).toBe('TEST');
-    expect(config.specVersion).toBe('0.1.5');
-    expect(config.releaseManifest).toBe('RELEASE_MANIFEST-0.1.5.md');
+    expect(config.specVersion).toBe('0.1.6');
+    expect(config.releaseManifest).toBe('RELEASE_MANIFEST-0.1.6.md');
     expect(config.allowRealExternalEffects).toBe(false);
     expect(config.adapters.peerSupport).toBe('manual');
     expect(config.supportSignalMode).toBe('fixture');

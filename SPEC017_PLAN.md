@@ -1,6 +1,6 @@
 # SPEC017_PLAN.md — Implementation conformance plan for SUAS v0.1.1
 
-**Released spec:** `0.1.5` (plan opened against `0.1.1`; the runtime now pins `0.1.5` — `src/release/pins.ts`, `RELEASE_MANIFEST-0.1.5.md`)  
+**Released spec:** `0.1.6` (plan opened against `0.1.1`; the runtime now pins `0.1.6` — `src/release/pins.ts`, `RELEASE_MANIFEST-0.1.6.md`)  
 **Status:** `IN_PROGRESS`  
 **Implementation repository:** `scrimshawlife-ctrl/SUAS`  
 **Canonical specs:** `scrimshawlife-ctrl/SUAS-specs`
@@ -48,7 +48,7 @@ No readiness gate has advanced, and production remains blocked until SPEC-018.
 
 ## Objective
 
-Build SUAS against the released v0.1.5 contracts and continuously prove conformance without upgrading any production-unavailable release feature by implication.
+Build SUAS against the released v0.1.6 contracts and continuously prove conformance without upgrading any production-unavailable release feature by implication.
 
 ## Slice 1 — Foundation
 
@@ -114,4 +114,4 @@ Each slice includes:
 
 ## SPEC-017 completion
 
-SPEC-017 completes only when the built implementation is audited against the entire released v0.1.5 cut and all material gaps are fixed or returned to specs. SPEC-018 remains required before any real pilot or production operation.
+SPEC-017 completes only when the built implementation is audited against the entire released v0.1.6 cut and all material gaps are fixed or returned to specs. SPEC-018 remains required before any real pilot or production operation.

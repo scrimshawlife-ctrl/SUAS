@@ -9,8 +9,8 @@
  */
 
 process.env.SUAS_ENV = 'TEST';
-process.env.SUAS_SPEC_VERSION ??= '0.1.5';
-process.env.SUAS_RELEASE_MANIFEST ??= 'RELEASE_MANIFEST-0.1.5.md';
+process.env.SUAS_SPEC_VERSION ??= '0.1.6';
+process.env.SUAS_RELEASE_MANIFEST ??= 'RELEASE_MANIFEST-0.1.6.md';
 process.env.SUAS_ALLOW_REAL_EXTERNAL_EFFECTS = 'false';
 process.env.SUAS_MIGRATIONS_MODE ??= 'apply';
 process.env.SUAS_EMAIL_MODE ??= 'fake';

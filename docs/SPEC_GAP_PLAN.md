@@ -1,7 +1,7 @@
 # SPEC_GAP_PLAN.md — Remaining spec-gap close sequence
 
 **Status:** `PLAN` (not implementation authority)
-**Against:** released `SUAS-specs` **0.1.5** (`e8a7d4cc`) and implementation pin `src/release/pins.ts`
+**Against:** released `SUAS-specs` **0.1.6** (`5074812e`) and implementation pin `src/release/pins.ts`
 **Companion:** `docs/SPEC_DESIGN_GAPS.md` (catalog), `docs/SPEC_GAP_PROPOSALS.md` (P-1..P-23, already ratified in 0.1.4)
 **Readiness:** `NOT_READY` (unchanged). Nothing here authorizes production, real veteran data, or SPEC-018.
 
@@ -9,6 +9,7 @@ This plan sequences the **remaining** gaps after:
 
 - **0.1.4** — Bucket I proposals P-1..P-23 ratified (`RELEASE_MANIFEST-0.1.4.md`).
 - **0.1.5** — D-012 / G-III-1 closed (`SAFETY_COPY.md`).
+- **0.1.6** — Wave A editorial hygiene (G-III-2 / G-III-3 / high-traffic G-III-4). Closes no D-0xx.
 
 It does **not** invent scoring, crisis copy, legal status, vendor, capacity, SLO, RTO/RPO, or reporting-threshold values (`AGENTS.md` rules 3, 14, 15).
 
@@ -95,18 +96,18 @@ Wave F  draft Rev 3 (islands)           ← defer
 
 ---
 
-### Wave A — Spec hygiene (no new product decision) — **IN FLIGHT**
+### Wave A — Spec hygiene (no new product decision) — **DONE (0.1.6)**
 
 **Goal:** Make already-decided rules readable in the files implementers open first. Target: a small `0.1.6` editorial release.
 
-**Drafted** on `SUAS-specs` `cursor/spec-0.1.6-wave-a-hygiene-1036` as `RELEASE_MANIFEST-0.1.6.md` ([specs PR #9](https://github.com/scrimshawlife-ctrl/suas-specs/pull/9)). Lifecycle is owner-controlled: **do not re-pin** `src/release/pins.ts` until that specs PR is merged. G-I-4 is **not** in the draft (no `ServiceOffer`/`ProviderOffer` join exists in this repo to transcribe).
+**Released** as `SUAS-specs` `0.1.6` (`5074812e`, [specs PR #9](https://github.com/scrimshawlife-ctrl/suas-specs/pull/9)). G-I-4 was **not** included (no `ServiceOffer`/`ProviderOffer` join exists in this repo to transcribe).
 
-| ID                   | Close                                                                                                                      | Spec files                                                                                                                                                | Owner input needed?                                                                                                                                                            |
-| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **G-III-2**          | Replace “D-015/D-016 open / `INFERRED`” prose with the 0.1.0 decided defaults                                              | `CASES.md` §8.1 (still titled “D-015 open”); `AUTH.md` (D-016 `INFERRED`); `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md` if they still say open | **No.** Values are already in `DECISIONS.md` / `RELEASE_DECISIONS-0.1.0.md`.                                                                                                   |
-| **G-III-3**          | Point SPEC-003 / leftover “undefined projection” text at the 0.1.4 selection rule                                          | `SPEC-003.md`, any leftover deferral in `SUPPORT_SIGNALS.md` §7                                                                                           | **Confirm only:** two overrides targeting the same signal (P-21 caveat). If unstated, keep current impl (override supersedes its target; newest `computed_at` wins).           |
-| **G-III-4 leftover** | Per-file headers still say `draft` / `0.1.0` (e.g. `CASES.md`, `SUPPORT_SIGNALS.md`) even though P-1 made the manifest win | Same files P-1 listed                                                                                                                                     | **No.** Either stamp `released via RELEASE_MANIFEST-0.1.5.md` or leave the P-1 override sentence and add a one-line “stale header is not authority” on each high-traffic file. |
-| **G-I-4**            | `ServiceOffer` (catalog) vs `ProviderOffer` (live) join/supersession                                                       | `DOMAIN_MODEL.md`, `PROVIDER_INTEGRATIONS.md` §6, `DISPATCH.md` §5                                                                                        | **Only if** no current impl rule can be transcribed. First pass: document whatever the router already does; do not invent a new offer lifecycle.                               |
+| ID                   | Close                                                                                                    | Spec files                                                                                                                                                | Owner input needed?                                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **G-III-2**          | Replace “D-015/D-016 open / `INFERRED`” prose with the 0.1.0 decided defaults                            | `CASES.md` §8.1 (still titled “D-015 open”); `AUTH.md` (D-016 `INFERRED`); `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md` if they still say open | **No.** Values are already in `DECISIONS.md` / `RELEASE_DECISIONS-0.1.0.md`.                                                                                         |
+| **G-III-3**          | Point SPEC-003 / leftover “undefined projection” text at the 0.1.4 selection rule                        | `SPEC-003.md`, any leftover deferral in `SUPPORT_SIGNALS.md` §7                                                                                           | **Confirm only:** two overrides targeting the same signal (P-21 caveat). If unstated, keep current impl (override supersedes its target; newest `computed_at` wins). |
+| **G-III-4 leftover** | High-traffic stale headers (closed in 0.1.6). Remaining `draft` / `0.1.0` headers on lower-traffic files | Same files P-1 listed                                                                                                                                     | **Partial.** 0.1.6 stamped high-traffic files. Lower-traffic leftovers stay documented, not silently treated as unreleased.                                          |
+| **G-I-4**            | `ServiceOffer` (catalog) vs `ProviderOffer` (live) join/supersession                                     | `DOMAIN_MODEL.md`, `PROVIDER_INTEGRATIONS.md` §6, `DISPATCH.md` §5                                                                                        | **Only if** no current impl rule can be transcribed. First pass: document whatever the router already does; do not invent a new offer lifecycle.                     |
 
 **Exit:** An implementer reading `CASES.md` / `AUTH.md` / `SUPPORT_SIGNALS.md` does not see a contradiction with `DECISIONS.md`.
 
@@ -235,15 +236,15 @@ Draft files are not authority. Do not implement islands, anonymous front door, o
 
 Smallest set that unblocks the most _product_ (not hosting):
 
-| Priority | Item                                                 | Why this next                                                                                               |
-| -------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 1        | **Wave A** (G-III-2, leftover headers)               | **Drafted** as specs `0.1.6` (`cursor/spec-0.1.6-wave-a-hygiene-1036`). Owner merge required before re-pin. |
-| 2        | **Wave B — D-011** (+ G-I-28 action)                 | Only remaining load-bearing SPEC-017 gap                                                                    |
-| 3        | **Wave C1** (G-I-6/7/8)                              | Stops fulfillment edge-case invention                                                                       |
-| 4        | **Wave D — D-019/D-020** (or “manual through pilot”) | Completes capability-port story                                                                             |
-| 5        | **G-I-30** if live QRF matching is the next UX goal  | Dashboard/on-duty truth                                                                                     |
-| 6        | **D-010** when reservation/payment is in scope       | Unblocks Amadeus book + Uber pay                                                                            |
-| 7        | **Wave E** when a real pilot date exists             | SPEC-018                                                                                                    |
+| Priority | Item                                                 | Why this next                                               |
+| -------- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| 1        | **Wave A** (G-III-2, leftover headers)               | **Done** in specs `0.1.6`. This repo re-pins to that stack. |
+| 2        | **Wave B — D-011** (+ G-I-28 action)                 | Only remaining load-bearing SPEC-017 gap                    |
+| 3        | **Wave C1** (G-I-6/7/8)                              | Stops fulfillment edge-case invention                       |
+| 4        | **Wave D — D-019/D-020** (or “manual through pilot”) | Completes capability-port story                             |
+| 5        | **G-I-30** if live QRF matching is the next UX goal  | Dashboard/on-duty truth                                     |
+| 6        | **D-010** when reservation/payment is in scope       | Unblocks Amadeus book + Uber pay                            |
+| 7        | **Wave E** when a real pilot date exists             | SPEC-018                                                    |
 
 ---
 
@@ -251,7 +252,7 @@ Smallest set that unblocks the most _product_ (not hosting):
 
 - Canonical repo for Waves A–F spec text: `scrimshawlife-ctrl/SUAS-specs`. This repo only re-pins after a specs merge.
 - Do not encode Wave B–E values in implementation first. D-012 was the opposite order (decision then code) and is the pattern to keep.
-- Wave A is drafted as editorial `0.1.6` (no new owner values). Owner-merge the specs PR, then re-pin this repo. Do not treat the draft branch as released authority.
+- Wave A is released as editorial `0.1.6` (no new owner values). This repo re-pins after that merge.
 - After any specs merge: update `src/release/pins.ts`, `.env.example`, `tests/helpers/env.ts`, `tests/setup.ts`, `.github/workflows/verify.yml`, and the handoff docs together.
 - Catalog hygiene: when a wave merges, mark the gap `RESOLVED` in `docs/SPEC_DESIGN_GAPS.md` the way G-III-1 / D-012 were marked.
 
