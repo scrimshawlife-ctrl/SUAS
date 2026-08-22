@@ -1,15 +1,15 @@
 # SPEC_DESIGN_GAPS.md — SUAS-specs design-gap triage
 
-**Released spec stack:** `0.1.5`
-**Release manifest:** `RELEASE_MANIFEST-0.1.5.md`
-**Specs merge:** `e8a7d4cc4c409ff00fef115a8b3f5cec9f9b5861`
+**Released spec stack:** `0.1.6`
+**Release manifest:** `RELEASE_MANIFEST-0.1.6.md`
+**Specs merge:** `5074812eff61e22f8932de4c1460bc6d6d37f747`
 **Stage:** `SPEC-017` implementation conformance
 **Pilot / production readiness:** `NOT_READY` (unchanged by this document)
 
 ## Purpose and governance
 
 This is a **triage catalog of design gaps in the canonical `scrimshawlife-ctrl/SUAS-specs`**
-stack `0.1.5`, surfaced while implementing SUAS. It exists to satisfy `AGENTS.md`
+stack `0.1.6`, surfaced while implementing SUAS. It exists to satisfy `AGENTS.md`
 rule 3 ("semantic gaps return to specs; do not invent product/domain behavior")
 by giving those returns a single tracked home.
 
@@ -51,23 +51,23 @@ the authoritative locus is the named spec file.
 - **Resolution:** D-012 is `DECIDED` in `RELEASE_DECISIONS-0.1.5.md`. Authorized destinations are 911 and the 988 Suicide & Crisis Lifeline. Implementations render `SAFETY_COPY.md` when `SUAS_SAFETY_COPY_MODE=approved` and MUST NOT invent alternative crisis wording. Draft island-specific numbers remain draft (D-026) and are not authority.
 - **Impact:** Closed as a contradiction. Remaining island/draft work is still D-026.
 
-### G-III-2 — D-015 / D-016 `DECIDED` in the register but "open" in domain text — **PENDING 0.1.6**
+### G-III-2 — D-015 / D-016 `DECIDED` in the register but "open" in domain text — **RESOLVED BY 0.1.6**
 
 - **Refs:** `DECISIONS.md` D-015/D-016 (`DECIDED`) vs prior `CASES.md` / `PRODUCT.md` / `ONBOARDING.md` / `PILOT.md` / `PRIVACY.md` / `GLOSSARY.md` "open" / `INFERRED` wording.
-- **Draft close:** `SUAS-specs` branch `cursor/spec-0.1.6-wave-a-hygiene-1036` (`RELEASE_MANIFEST-0.1.6.md`) rewrites those files to the v0.1 decided defaults. **Not authority until the specs PR is owner-merged.** Do not re-pin this repo yet.
-- **Impact:** After merge, implementers reading domain files will see the same D-015/D-016 defaults as `DECISIONS.md`.
+- **Resolution:** `RELEASE_MANIFEST-0.1.6.md` rewrites those files to the v0.1 decided defaults. Decision values are unchanged.
+- **Impact:** Domain files now match `DECISIONS.md` for D-015/D-016.
 
-### G-III-3 — SPEC acceptance references an undefined target (effective Support Signal projection) — **PENDING 0.1.6**
+### G-III-3 — SPEC acceptance references an undefined target (effective Support Signal projection) — **RESOLVED BY 0.1.6**
 
 - **Refs:** SPEC-003 historically accepted "effective projection as defined in SPEC-006"; `SUPPORT_SIGNALS.md` §7 left a two-override owner-confirm follow-up.
-- **Draft close:** 0.1.6 points SPEC-003 at `SUPPORT_SIGNALS.md` §7.1 / `DATA_MODEL.md` §4 and transcribes the already-implemented two-override / chain rule (named target excluded; remaining candidates by `computed_at DESC`, `support_signal_id DESC`). **Not authority until the specs PR is owner-merged.**
-- **Impact:** After merge, the accepted projection pointer matches the 0.1.4 selection rule (see G-I-24 / P-21).
+- **Resolution:** 0.1.6 points SPEC-003 at `SUPPORT_SIGNALS.md` §7.1 / `DATA_MODEL.md` §4 and transcribes the already-implemented two-override / chain rule (named target excluded; remaining candidates by `computed_at DESC`, `support_signal_id DESC`).
+- **Impact:** The accepted projection pointer matches the 0.1.4 selection rule (see G-I-24 / P-21).
 
-### G-III-4 — Released manifest/acceptance vs per-file `draft` headers (authority meta-gap) — **PARTIAL / PENDING 0.1.6**
+### G-III-4 — Released manifest/acceptance vs per-file `draft` headers (authority meta-gap) — **PARTIAL (high-traffic closed by 0.1.6)**
 
 - **Refs:** `RELEASE_MANIFEST-0.1.3.md` + SPEC-010/011/013/014 acceptance vs `draft` / `dependency-blocked` headers still on `DOMAIN_MODEL.md`, `DATA_MODEL.md`, `EVENT_MODEL.md`, `CASES.md`, `DISPATCH.md`, `FULFILLMENT.md`, `RESILIENCE.md`, `OPERATIONS.md`, `PRODUCT.md`, `GLOSSARY.md`, and others; SPEC acceptance records still pinned to stack `0.1.0`.
-- **Draft close (high-traffic leftover):** 0.1.6 stamps Authority lines on `CASES.md`, `AUTH.md`, `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md`, `GLOSSARY.md`, `SUPPORT_SIGNALS.md`, and `DATA_MODEL.md` (inline `draft` remains for provenance; manifest wins per `VERSIONING.md` §1). Remaining files still rely on the P-1 manifest-override rule. **Not authority until the specs PR is owner-merged.**
-- **Impact:** After merge, the files implementers open first no longer contradict the manifest. Other stale headers remain covered by P-1.
+- **Resolution (high-traffic leftover):** 0.1.6 stamps Authority lines on `CASES.md`, `AUTH.md`, `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md`, `GLOSSARY.md`, `SUPPORT_SIGNALS.md`, and `DATA_MODEL.md` (inline `draft` remains for provenance; manifest wins per `VERSIONING.md` §1). Remaining files still rely on the P-1 manifest-override rule.
+- **Impact:** The files implementers open first no longer contradict the manifest. Other stale headers remain covered by P-1.
 
 ---
 
@@ -107,7 +107,7 @@ the authoritative locus is the named spec file.
 ### Consent mechanics
 
 - **G-I-23 — No closed registry of `consent_basis` / system-basis codes.** Many paths allow action on a "documented system basis" with no enumeration. Refs: `CONSENT.md` §3.5/§3.6, `NOTIFICATIONS.md`, `REFERRALS.md`. Impl closes the list to `SYSTEM_INTERNAL_PROCESSING`, `RESPONDER_CASE_ASSIGNMENT` (Slice 4 §10 item 3).
-- **G-I-24 — Effective-signal selection rule is defined nowhere** (override chains, multiple primaries, tie-break; must be deterministic, not insertion-order). Refs: `SUPPORT_SIGNALS.md` §7 (defers), `DATA_MODEL.md` §4. Impl uses most-recent `computed_at`, tie-break by id desc, overrides supersede (Slice 9 §10 item 2). Definable now, independent of D-011 thresholds.
+- **G-I-24 — Effective-signal selection rule is defined nowhere** — **RESOLVED BY P-21 (0.1.4) / two-override chain (0.1.6).** Refs: `SUPPORT_SIGNALS.md` §7.1, `DATA_MODEL.md` §4. Most-recent `computed_at`, tie-break by id desc, override supersedes the named target; two overrides of the same target remain candidates (recency then id). Independent of D-011 thresholds.
 - **G-I-25 — `grantee_type` / `grantee_id` typing per grantee not specified** (what does the id reference for TRUSTED_CONTACT / RESPONDER / ORGANIZATION / SERVICE_PROVIDER?). Refs: `CONSENT.md` §2. (Slice 4 §10 item 2.)
 - **G-I-26 — Purpose-matching is prose, not a comparison rule.** Refs: `CONSENT.md` §3.4. (Slice 4 §10 item 5.)
 - **G-I-27 — Permission/scope vocabulary is illustrative ("e.g."), not closed;** unknown-pair accept/reject undefined. Refs: `CONSENT.md` §2.1. Impl closes it via `PERMITTED_SCOPES`.
@@ -191,7 +191,7 @@ break-glass/dual-control (`AUTH.md` §7), abandoned Check-In idle timeout
 ## Cross-references
 
 - Close sequence for remaining gaps: `docs/SPEC_GAP_PLAN.md`.
-- Wave A draft: `SUAS-specs` `0.1.6` at https://github.com/scrimshawlife-ctrl/suas-specs/pull/9 (not authority until owner merge; do not re-pin).
+- Wave A released: `SUAS-specs` `0.1.6` (`5074812e`, https://github.com/scrimshawlife-ctrl/suas-specs/pull/9). This repo re-pins in `src/release/pins.ts`.
 - Per-slice returned-gap detail: `docs/slices/SLICE_01_FOUNDATION.md` … `docs/slices/SLICE_11_RESILIENCE_HARNESS.md` (each `## 10` section).
 - Built-implementation conformance snapshot: `docs/SPEC017_COMPLETION_AUDIT.md`.
 - Runtime spec pins this triage is filed against: `src/release/pins.ts`.

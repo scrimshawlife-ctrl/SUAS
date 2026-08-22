@@ -1,15 +1,15 @@
-# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.5 handoff
+# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.6 handoff
 
 **Status:** `ACTIVE`  
-**Released specification:** `0.1.5`  
+**Released specification:** `0.1.6`  
 **Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`  
 **Current stage:** `SPEC-017`
 
 ## Canonical source
 
-- Specs release merge: `e8a7d4cc4c409ff00fef115a8b3f5cec9f9b5861`
-- Release manifest: `RELEASE_MANIFEST-0.1.5.md`
-- Release decision ledger: `RELEASE_DECISIONS-0.1.5.md` (D-012); `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise
+- Specs release merge: `5074812eff61e22f8932de4c1460bc6d6d37f747`
+- Release manifest: `RELEASE_MANIFEST-0.1.6.md`
+- Release decision ledger: inherited unchanged — `RELEASE_DECISIONS-0.1.5.md` (D-012); `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise. v0.1.6 closes no D-0xx.
 - Handoff: `HANDOFF.md`
 - Environment contract: `ENVIRONMENT.md`
 

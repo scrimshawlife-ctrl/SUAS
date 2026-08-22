@@ -2,11 +2,11 @@
 
 ## Canonical release
 
-Build against `scrimshawlife-ctrl/SUAS-specs` release **v0.1.5**.
+Build against `scrimshawlife-ctrl/SUAS-specs` release **v0.1.6**.
 
-- Specs merge: `e8a7d4cc4c409ff00fef115a8b3f5cec9f9b5861`
-- Manifest: `RELEASE_MANIFEST-0.1.5.md`
-- Decision ledger: `RELEASE_DECISIONS-0.1.5.md` (D-012); `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise
+- Specs merge: `5074812eff61e22f8932de4c1460bc6d6d37f747`
+- Manifest: `RELEASE_MANIFEST-0.1.6.md`
+- Decision ledger: inherited unchanged — `RELEASE_DECISIONS-0.1.5.md` (D-012); `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise. v0.1.6 closes no D-0xx.
 - Current stage: SPEC-017 implementation conformance
 - Production/pilot readiness: `NOT_READY`
 
@@ -18,7 +18,7 @@ Build against `scrimshawlife-ctrl/SUAS-specs` release **v0.1.5**.
 4. `SPEC017_PLAN.md`.
 5. In `SUAS-specs`: `HANDOFF.md`.
 6. `ENVIRONMENT.md`.
-7. `RELEASE_MANIFEST-0.1.5.md`.
+7. `RELEASE_MANIFEST-0.1.6.md`.
 8. `STATUS.md`, `PRODUCT.md`, `GLOSSARY.md`.
 9. `ARCHITECTURE.md`, `DOMAIN_MODEL.md`, `DATA_MODEL.md`, `API.md`, `APIS.md`, `TESTING.md`.
 10. Domain files for the slice you are implementing.
@@ -68,7 +68,7 @@ Slice 1 should establish:
 
 Keep these separate:
 
-- spec stack: `0.1.5`;
+- spec stack: `0.1.6`;
 - application version: implementation-owned;
 - API version: `/api/v0`;
 - event schema: `0.1.0` until revised;
