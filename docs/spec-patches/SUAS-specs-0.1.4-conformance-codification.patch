@@ -1,0 +1,853 @@
+From 06f34821576e12570833ab0d908ce89e2e2baada Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 22 Aug 2026 05:59:48 +0000
+Subject: [PATCH 1/5] specs(0.1.4): adopt additive data-model gaps
+ P-12,P-13,P-14,P-15,P-16,P-21,P-22
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Codifies accepted Bucket-I implementation-conformance gaps (docs/SPEC_GAP_PROPOSALS.md
+in scrimshawlife-ctrl/SUAS) into the canonical logical model. All additive and
+backward-compatible; no new product/domain behavior is invented.
+
+- DATA_MODEL.md: notifications subject_type/subject_id (P-12); follow_ups
+  responsible_type enum + referral_id (P-14); suas_admin_grants record (P-15);
+  fulfillment reconciliation sub-state + assignment/fulfillment cardinality
+  (P-16); support_cases.priority_signal_level (P-22); effective-signal
+  selection rule (P-21).
+- NOTIFICATIONS.md §3: subject reference (P-12).
+- RESOURCES.md §2: contact_method_kind scheme discriminator (P-13).
+- REFERRALS.md §2: typed {destination_type,destination_id} (P-13).
+- AUTH.md §6: SUAS_ADMIN as auditable grant record (P-15).
+---
+ AUTH.md          |  1 +
+ DATA_MODEL.md    | 18 ++++++++++++++----
+ NOTIFICATIONS.md |  1 +
+ REFERRALS.md     |  2 +-
+ RESOURCES.md     |  3 +++
+ 5 files changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/AUTH.md b/AUTH.md
+index 416256c..3a4a284 100644
+--- a/AUTH.md
++++ b/AUTH.md
+@@ -99,6 +99,7 @@ A revoked user cannot refresh or act. In-flight authorization after revocation m
+ - Org actions require active `OrganizationMembership` with the needed role.
+ - Roles: `RESPONDER`, `ORG_ADMIN`, `SERVICE_PROVIDER_USER`; global `SUAS_ADMIN` is distinct.
+ - Org-admin cannot become SUAS-admin by self-service role mutation.
++- The global `SUAS_ADMIN` role is represented as an auditable grant record (0.1.4), not a boolean on the user row: a user holds the role iff they have an `ACTIVE` `suas_admin_grants` entry, and grant/revoke record `granted_by`/`revoked_by` and timestamps so "who made this person a SUAS admin, and when" is answerable ([DATA_MODEL.md](DATA_MODEL.md) §2).
+ - Tenant/org context is server-derived and audited for privileged cross-scope actions.
+ 
+ ---
+diff --git a/DATA_MODEL.md b/DATA_MODEL.md
+index de2d865..d35c955 100644
+--- a/DATA_MODEL.md
++++ b/DATA_MODEL.md
+@@ -32,6 +32,9 @@
+ ### organizations / organization_memberships / responder_profiles
+ Canonical organization, role, membership status, queue-availability fields and timestamps. Active membership/role is authoritative at mutation time.
+ 
++### suas_admin_grants
++The global SUAS-admin role is an auditable grant record (0.1.4), not a boolean on the user row: `grant_id`, `user_id`, `granted_by`, nullable `revoked_by`, `status = ACTIVE|REVOKED`, and grant/revoke timestamps. "Who made this person a SUAS admin, and when" is answerable from history; a user is a SUAS admin iff they hold an `ACTIVE` grant. See [AUTH.md](AUTH.md) §6.
++
+ ---
+ 
+ ## 3. Questionnaire / Check-In
+@@ -57,7 +60,7 @@ Check-In/question links, answer/free-text, timestamp; completed history preserve
+ - Primary uniqueness by logical computation identity; explicit-need sources cannot use nullable Check-In as identity.
+ 
+ ### effective signal projection
+-Deterministic and efficient projection/current pointer over durable signal history; never insertion-order-only.
++Deterministic and efficient projection/current pointer over durable signal history; never insertion-order-only. The deterministic rule (0.1.4, reconciled from [SUPPORT_SIGNALS.md](SUPPORT_SIGNALS.md) §7): the effective signal is the most recent by `computed_at`, ties broken by `support_signal_id` descending, with an `OVERRIDE` superseding the signal it overrides. This is selection, not scoring, and is independent of the D-011 threshold decision.
+ 
+ ---
+ 
+@@ -72,14 +75,17 @@ Deterministic and efficient projection/current pointer over durable signal histo
+ ### support_cases
+ Case identity/veteran/tenant/status/priority/lifecycle timestamps plus nullable `current_settlement_id` convenience projection. MVP one-active-case exclusivity enforced transactionally/constraint-backed where required.
+ 
++Nullable `priority_signal_level` (0.1.4) tracks the effective Support Signal level (`GREEN|YELLOW|ORANGE|RED`) as a queue-filter fact only. It is a filterable projection, not a score; the action/command that writes it from a signal change remains an owner decision (G-I-28) and is not defined here.
++
+ ### case_assignments
+-Case/responder/status history. At most one active exclusive owner where required.
++Case/responder/status history. At most one active exclusive owner where required. The current-assignment projection (0.1.4) is the single row with `status = ACTIVE`; there is at most one `ACTIVE` assignment per Case, and it is the deterministic current owner. See [DISPATCH.md](DISPATCH.md) §6.
+ 
+ ### case_notes / contact_attempts
+ Separate first-class notes/contact-log history.
+ 
+ ### follow_ups
+-- PK; case; nullable request; tenant; `due_at`; stable/monotonic `schedule_version`; responsible type/id.
++- PK; case; nullable request; nullable `referral_id` FK (0.1.4) when the Follow-Up is the check-back for a Referral ([REFERRALS.md](REFERRALS.md)); tenant; `due_at`; stable/monotonic `schedule_version`; `responsible_type` + `responsible_id`.
++- `responsible_type` is the closed set `RESPONDER|VETERAN|ORG_ADMIN|SYSTEM` (0.1.4); `responsible_id` references the corresponding actor.
+ - status `SCHEDULED|DUE|COMPLETED|RESCHEDULED|OVERDUE|ESCALATED|CANCELLED`.
+ - `coordination_attempt_count` distinct from notification/job retries.
+ - `resolution_disposition = BLOCKING|CARRIED_FORWARD` while unresolved.
+@@ -101,8 +107,10 @@ Tenant/provider/capability/opaque adapter id/integration mode/enabled/coverage/p
+ ### fulfillment_attempts
+ Request/tenant/capability/adapter/provider/integration mode/stable external idempotency key/normalized attempt status/external ref/check/failure/timestamps. Retry same attempt reuses identity; reroute inserts new attempt.
+ 
++Reconciliation sub-state (0.1.4): an attempt whose external outcome is ambiguous carries `PROVIDER_UNKNOWN` plus the reconciliation bookkeeping it needs to be resolved later — a reconciliation status, the last reconciliation check time, and the external reference used to reconcile — and must reconcile to a definite outcome before any duplicate-risk retry ([RESILIENCE.md](RESILIENCE.md); §14 rule 8).
++
+ ### service_fulfillments
+-Request/tenant/optional FulfillmentAttempt, canonical fulfillment state/timestamps/confirmation/reason. History stays inspectable via durable row/event semantics.
++Request/tenant/optional FulfillmentAttempt, canonical fulfillment state/timestamps/confirmation/reason. History stays inspectable via durable row/event semantics. A Service Request has at most one `ServiceFulfillment` (0.1.4), which may have many `FulfillmentAttempt`s over its lifecycle.
+ 
+ ---
+ 
+@@ -127,9 +135,11 @@ User/channel/enabled state.
+ ### notifications
+ - PK `notification_id`; tenant; recipient; reason/policy key; channel; consent/system basis; template version.
+ - `dedupe_key`/logical-send identity when generating policy can be delivered more than once.
++- optional subject reference `subject_type` + `subject_id` (0.1.4) linking a logical send to the workflow entity it was sent for; `subject_type` is one of `SUPPORT_CASE|SERVICE_REQUEST|REFERRAL` and `subject_id` is that entity's id in the same tenant. Additive and nullable; existing sends and dedupe are unchanged.
+ - canonical delivery status `QUEUED|SENT|FAILED|DELIVERED|BOUNCED|UNDELIVERABLE`; attempt count/last attempt/sent timestamps.
+ - one row per logical send; transport attempt history lives in immutable Audit Events under current contract.
+ - dedupe uniqueness is scoped by tenant + recipient/channel/reason/policy as defined by the generating policy; deliberate reminder/escalation gets a new logical identity.
++- the subject reference is what MVP `RESPONDER_NOTIFIED` requires to be truthfully reachable: without a delivery linked to the Service Request the QRF surface rests on `SEARCHING` ([MVP_REFERENCE.md](MVP_REFERENCE.md) §7.2).
+ 
+ ---
+ 
+diff --git a/NOTIFICATIONS.md b/NOTIFICATIONS.md
+index 93a562f..5cde0e5 100644
+--- a/NOTIFICATIONS.md
++++ b/NOTIFICATIONS.md
+@@ -39,6 +39,7 @@ Required logical fields:
+ - channel;
+ - `consent_basis` or documented system basis;
+ - `template_version`;
++- optional subject reference `subject_type` + `subject_id` (0.1.4) linking the send to the workflow entity it was sent for, where `subject_type ∈ {SUPPORT_CASE, SERVICE_REQUEST, REFERRAL}`; additive and nullable, and required for MVP `RESPONDER_NOTIFIED` to be truthfully reachable ([MVP_REFERENCE.md](MVP_REFERENCE.md) §7.2, [DATA_MODEL.md](DATA_MODEL.md) §9);
+ - logical-send `dedupe_key`/equivalent deterministic identity where the generating policy can be delivered more than once;
+ - `delivery_status`;
+ - `attempt_count`, `last_attempt_at`, `sent_at` as applicable;
+diff --git a/REFERRALS.md b/REFERRALS.md
+index 2acfa28..57d8216 100644
+--- a/REFERRALS.md
++++ b/REFERRALS.md
+@@ -16,7 +16,7 @@ A **Referral** is a directed, consented handoff to a destination Resource or Ser
+ ## 2. Required content
+ 
+ - `consent_grant_id` or documented accepted system basis that authorizes the destination/payload at send time;
+-- destination type/id;
++- destination as a typed `{destination_type, destination_id}` (0.1.4), where `destination_type` is the closed set `RESOURCE|SERVICE_PROVIDER|ORGANIZATION|EXTERNAL` and `destination_id` references the entity of that type (for `EXTERNAL`, an opaque recorded reference for a destination not modeled as a SUAS entity);
+ - reason;
+ - method (`IN_APP`, `PHONE`, `EMAIL`, or accepted future method);
+ - status;
+diff --git a/RESOURCES.md b/RESOURCES.md
+index 588c8dc..39ceabc 100644
+--- a/RESOURCES.md
++++ b/RESOURCES.md
+@@ -27,6 +27,7 @@ Catalog freshness, provider transactional availability, and actual fulfillment a
+ | `coverage_geometry` | optional; D-014/physical representation open |
+ | `hours` | optional |
+ | `contact_method` | public/operational contact path, no credentials |
++| `contact_method_kind` | optional scheme discriminator for `contact_method` (0.1.4), one of `PHONE`,`EMAIL`,`URL`,`FREEFORM`; absent/`FREEFORM` means unstructured text and no direct action is offered |
+ | `referral_method` | how a Referral is initiated |
+ | `cost` | optional/informational; not billing authority |
+ | `capacity` | optional snapshot; not presumed real-time |
+@@ -37,6 +38,8 @@ Catalog freshness, provider transactional availability, and actual fulfillment a
+ 
+ Provider API credentials/secrets are never Resource fields.
+ 
++`contact_method_kind` (0.1.4) is what lets the veteran-visible surface offer a direct call/email/web action for a recorded `PHONE`/`EMAIL`/`URL` value ([MVP_REFERENCE.md](MVP_REFERENCE.md) §8) instead of guessing a scheme from free text. The discriminator is additive and backward-compatible: a Resource with no kind (or `FREEFORM`) renders `contact_method` as text exactly as before. The vocabulary is owned here, not by a renderer.
++
+ ---
+ 
+ ## 3. Catalog freshness
+-- 
+2.43.0
+
+
+From 65c0dbc661a78ec84c984c33e9a798ea9abbd496 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 22 Aug 2026 06:02:58 +0000
+Subject: [PATCH 2/5] specs(0.1.4): codify state machines + vocabulary
+ P-2,P-4,P-5,P-6,P-7,P-8,P-9,P-10,P-11,P-16
+
+- CASES.md: ACTIVATE is the only ASSIGNED->ACTIVE edge (P-9); closed blocking
+  set for resolution (P-8); CLOSED->OPEN sole reopen edge (P-11); command list;
+  priority_signal_level note (P-22).
+- FOLLOWUP.md: coordination_attempt_count naming (P-2); responsible_type enum +
+  referral_id (P-14); reschedule returns SCHEDULED w/ bumped schedule_version,
+  RESCHEDULED non-resting (P-10).
+- DISPATCH.md: closed cancel/expiry/escalation source sets + RETURN_FROM_ESCALATION
+  targets (P-7); current-assignment + one-fulfillment/many-attempts + PROVIDER_UNKNOWN
+  reconciliation projection (P-16).
+- PROVIDER_INTEGRATIONS.md: three independent mode concepts (P-5); mandatory
+  per-capability manual adapter + registry (P-6).
+- FULFILLMENT.md: category<->capability<->port mapping table, category is the
+  canonical key (P-4).
+---
+ CASES.md                 | 12 +++++++++---
+ DISPATCH.md              | 12 ++++++------
+ FOLLOWUP.md              | 13 +++++++------
+ FULFILLMENT.md           | 13 +++++++++++++
+ PROVIDER_INTEGRATIONS.md |  6 ++++++
+ 5 files changed, 41 insertions(+), 15 deletions(-)
+
+diff --git a/CASES.md b/CASES.md
+index 77757ec..aae6e72 100644
+--- a/CASES.md
++++ b/CASES.md
+@@ -42,6 +42,8 @@ A case may be requested when:
+ 
+ MVP operating default remains one non-closed coordination Case per Veteran (`INFERRED`; later multi-case policy requires a spec change).
+ 
++The Case carries a nullable `priority_signal_level` (0.1.4) tracking the effective Support Signal level as a queue-filter fact only ([DATA_MODEL.md](DATA_MODEL.md) §6); the command that writes it from a signal change remains an owner decision (G-I-28).
++
+ ### 3.1 Atomic creation invariant
+ 
+ Signal/event/job delivery may be duplicated or concurrent. Therefore case creation must be idempotent against a stable **case-open intent** and must not rely on `read no case → insert` without conflict protection.
+@@ -68,7 +70,7 @@ Every transition records source, target, actor, prerequisites, timestamps, audit
+ | `OPEN` | `TRIAGED` | Responder | authorized queue access | — |
+ | `TRIAGED` | `ASSIGNED` | Responder claim / Org-admin assign | target membership ACTIVE; atomic assignment succeeds | `CASE_ASSIGNED` |
+ | `OPEN` | `ASSIGNED` | Responder claim / Org-admin assign | target membership ACTIVE; atomic assignment succeeds | `CASE_ASSIGNED` |
+-| `ASSIGNED` | `ACTIVE` | assigned Responder | first qualifying work action or explicit activate command | — |
++| `ASSIGNED` | `ACTIVE` | assigned Responder | explicit `ACTIVATE` command (0.1.4); no work action implicitly activates a Case | — |
+ | `ACTIVE` | `FOLLOWUP` | assigned Responder | Follow-Up exists or explicit transition with documented reason | `FOLLOWUP_CREATED` only if created |
+ | `FOLLOWUP` | `ACTIVE` | assigned Responder | new coordination work required | — |
+ | `ACTIVE` | `RESOLVED` | assigned Responder | Settlement present; no blocking non-terminal Service Requests | `CASE_RESOLVED` |
+@@ -81,6 +83,10 @@ Every transition records source, target, actor, prerequisites, timestamps, audit
+ | `ACTIVE` | `ACTIVE` | assigned Responder | `ESCALATE` with reason | `CASE_ESCALATED` |
+ | `FOLLOWUP` | `ACTIVE` | assigned Responder | `ESCALATE` with reason; new active work required | `CASE_ESCALATED` |
+ 
++### 4.0 Case commands (0.1.4)
++
++The named case commands are `TRIAGE`, `CLAIM_CASE`/`ASSIGN_CASE`, `ACTIVATE`, `ESCALATE`, `RESOLVE`, `CLOSE`, and `REOPEN`. `ACTIVATE` is the only edge from `ASSIGNED` to `ACTIVE`: activation is always an explicit command, never an implicit side effect of recording work.
++
+ ### 4.1 Escalation correction
+ 
+ `ESCALATE` is **not** a universal state jump from any non-terminal state. An unassigned `OPEN`/`TRIAGED` case cannot be escalated by an "assigned Responder" because no such assignment exists.
+@@ -89,7 +95,7 @@ For unassigned high-priority cases, queue priority/Org-admin assignment is the m
+ 
+ ### 4.2 Reopen
+ 
+-`CLOSED` → `OPEN` is allowed only through a documented reopen command by an authorized owning-org actor or SUAS-admin break-glass path with reason and audit. Prior Settlement/history remain immutable; resolution of the reopened cycle requires a new Settlement record/linkage as later data-model semantics specify.
++`CLOSED` → `OPEN` is the only reopen edge (0.1.4): a `RESOLVED` Case is closed before it can be reopened into a new resolution cycle, so there is no `RESOLVED → OPEN` edge. It is allowed only through a documented reopen command by an authorized owning-org actor or SUAS-admin break-glass path with reason and audit. Prior Settlement/history remain immutable; resolution of the reopened cycle requires a new Settlement record/linkage as later data-model semantics specify.
+ 
+ ---
+ 
+@@ -124,7 +130,7 @@ Queue read freshness is advisory; authorization/claim validity is always re-chec
+ ## 7. Resolution and closure
+ 
+ - `RESOLVED` requires a Settlement.
+-- Blocking Service Requests/Follow-Ups must satisfy the documented terminal rules.
++- Blocking Service Requests/Follow-Ups must satisfy the documented terminal rules. A Service Request **blocks** Case resolution iff its status is **not** one of the terminal statuses `{CLOSED, CANCELLED, EXPIRED, UNFULFILLABLE}` (0.1.4); a request in any other status (including `CONFIRMED`, which is non-terminal for this rule) still blocks resolution.
+ - `CLOSED` retains all history.
+ - Signal returning `GREEN` does not auto-close a Case.
+ - Generative AI must not determine resolution/closure.
+diff --git a/DISPATCH.md b/DISPATCH.md
+index 06709a0..24a2110 100644
+--- a/DISPATCH.md
++++ b/DISPATCH.md
+@@ -60,13 +60,13 @@ Required semantics:
+ | `CONFIRMED` | `CLOSED` | assigned Responder | no unresolved confirmation dispute | — |
+ | `ASSIGNED` | `DECLINED` | authorized provider identity / assigned Responder-on-behalf | decline evidence + reason | — |
+ | `DECLINED` | `MATCHING` | assigned Responder | prior attempt terminal/recorded; deliberate rematch | — |
+-| allowed non-terminal | `CANCELLED` | Veteran / assigned Responder | reason; cancellation authority checked | — |
+-| `CREATED`/`SUBMITTED`/`TRIAGED`/`MATCHING`/`ASSIGNED` | `EXPIRED` | System | documented TTL elapsed; stale-state check passes | — |
++| `{CREATED, SUBMITTED, TRIAGED, MATCHING, ASSIGNED, ACCEPTED, IN_PROGRESS}` | `CANCELLED` | Veteran / assigned Responder | reason; cancellation authority checked | — |
++| `{CREATED, SUBMITTED, TRIAGED, MATCHING, ASSIGNED}` | `EXPIRED` | System | documented TTL elapsed; stale-state check passes | — |
+ | `TRIAGED`/`MATCHING`/`ASSIGNED`/`DECLINED` | `UNFULFILLABLE` | assigned Responder | reason; no acceptable current path | — |
+-| assigned non-terminal workflow state | `ESCALATED` | assigned Responder | reason | may emit `CASE_ESCALATED` only when Case escalation is also performed |
+-| `ESCALATED` | `TRIAGED` or `MATCHING` | assigned Responder | escalation review complete | — |
++| `{TRIAGED, MATCHING, ASSIGNED, ACCEPTED, IN_PROGRESS}` | `ESCALATED` | assigned Responder | reason | may emit `CASE_ESCALATED` only when Case escalation is also performed |
++| `ESCALATED` | `TRIAGED` or `MATCHING` | assigned Responder | escalation review complete; caller names the intended target | — |
+ 
+-Exact `allowed non-terminal` cancellation edges are the currently documented pre-closed states excluding already-terminal exception states; implementation must encode the explicit set, not a wildcard that accidentally permits `CLOSED` or invalid historical transitions.
++Closed edge sets (0.1.4): cancellation, expiry, and escalation are the enumerated source sets in the table above (no wildcard). `RETURN_FROM_ESCALATION` has exactly two documented targets — `TRIAGED` and `MATCHING` — and the caller names the intended one. Implementation encodes these explicit sets, never a wildcard that could permit `CLOSED` or an invalid historical transition.
+ 
+ ---
+ 
+@@ -106,7 +106,7 @@ Provider/resource assignment is a contested mutation when multiple responders or
+ - The losing command conflicts and must not create a second logical `SERVICE_REQUEST_ASSIGNED` event.
+ - A later deliberate rematch is represented by the documented decline/escalate/cancel/re-match flow, not by silently overwriting provider identity.
+ 
+-The exact current-provider/assignment storage representation is reconciled in SPEC-006.
++Current-assignment projection (0.1.4): the current owner is the single `case_assignments` row with `status = ACTIVE`, and there is at most one `ACTIVE` assignment per Case ([DATA_MODEL.md](DATA_MODEL.md) §6). A Service Request has at most one `ServiceFulfillment`, which may have many `FulfillmentAttempt`s; an attempt with an ambiguous external outcome carries `PROVIDER_UNKNOWN` plus reconciliation bookkeeping and must reconcile before any duplicate-risk retry ([DATA_MODEL.md](DATA_MODEL.md) §7, [RESILIENCE.md](RESILIENCE.md)).
+ 
+ ---
+ 
+diff --git a/FOLLOWUP.md b/FOLLOWUP.md
+index 57f0e02..b3a4538 100644
+--- a/FOLLOWUP.md
++++ b/FOLLOWUP.md
+@@ -35,14 +35,14 @@ Required:
+ 
+ - `support_case_id`
+ - `due_at`
+-- `responsible_type`
+-- `responsible_id`
++- `responsible_type` — the closed set `RESPONDER|VETERAN|ORG_ADMIN|SYSTEM` (0.1.4)
++- `responsible_id` — references the actor identified by `responsible_type`
+ - `status`
+ 
+ Optional:
+ 
+ - `service_request_id`
+-- related `referral_id` linkage through the accepted data model
++- `referral_id` FK (0.1.4) when the Follow-Up is the check-back for a Referral ([REFERRALS.md](REFERRALS.md) §6, [DATA_MODEL.md](DATA_MODEL.md) §6)
+ - completion/cancellation/reschedule reason metadata
+ 
+ Veteran may see prompts addressed to them under the MVP visibility rules.
+@@ -51,14 +51,14 @@ Veteran may see prompts addressed to them under the MVP visibility rules.
+ 
+ ## 4. Retry semantics
+ 
+-`FollowUp.retry_count` means **coordination-attempt retry count**, not infrastructure/message-delivery attempts.
++The coordination counter is named `coordination_attempt_count` (0.1.4, matching [DATA_MODEL.md](DATA_MODEL.md) §6; earlier drafts called it `retry_count`). It means **coordination-attempt retry count**, not infrastructure/message-delivery attempts.
+ 
+-Examples that may increment Follow-Up coordination retry count:
++Examples that may increment `coordination_attempt_count`:
+ 
+ - responder attempted the required check-back and did not reach the veteran/provider;
+ - a scheduled coordination action was attempted but could not be completed and will be retried.
+ 
+-The following do **not** increment `FollowUp.retry_count`:
++The following do **not** increment `coordination_attempt_count`:
+ 
+ - SMS/email provider send retries;
+ - webhook retries;
+@@ -98,6 +98,7 @@ Rules:
+ ### Reschedule
+ 
+ - reason + new `due_at` required;
++- reschedule returns the Follow-Up to `SCHEDULED` with a bumped `schedule_version` (0.1.4); the `RESCHEDULED` value is retained for schema fidelity but is **not** a resting status, so a due-sweep selecting `SCHEDULED` still finds a rescheduled Follow-Up;
+ - prior due-time history remains inspectable through Audit/Domain history as accepted;
+ - new schedule gets a new durable due-work identity/version so old queued work becomes stale.
+ 
+diff --git a/FULFILLMENT.md b/FULFILLMENT.md
+index 9edaad2..6cce6eb 100644
+--- a/FULFILLMENT.md
++++ b/FULFILLMENT.md
+@@ -97,6 +97,19 @@ SUAS must reconcile by idempotency key/external reference/provider status where
+ 
+ ## 4. Provider-neutral execution
+ 
++### 4.0 Category ↔ capability ↔ port mapping (0.1.4)
++
++The four MVP categories map one-to-one to a capability id, a provider-neutral port, and the value stored in `FulfillmentAttempt.capability`. Persistence, routing, and consent use the **category value** as the canonical key.
++
++| MVP category | Capability id | Provider-neutral port | `FulfillmentAttempt.capability` |
++|---|---|---|---|
++| `FOOD` | `FOOD` | `FoodSupportPort` | `FOOD` |
++| `TRANSPORTATION` | `TRANSPORTATION` | `TransportationPort` | `TRANSPORTATION` |
++| `SHELTER` | `SHELTER` | `TemporaryShelterPort` | `SHELTER` |
++| `PEER_SUPPORT` | `PEER_SUPPORT` | `PeerSupportPort` | `PEER_SUPPORT` |
++
++This publishes the equivalence the state machines already imply; it introduces no new names. See [ARCHITECTURE.md](ARCHITECTURE.md) §11.
++
+ MVP service categories may use:
+ 
+ - `TransportationPort`
+diff --git a/PROVIDER_INTEGRATIONS.md b/PROVIDER_INTEGRATIONS.md
+index d625ec8..76998de 100644
+--- a/PROVIDER_INTEGRATIONS.md
++++ b/PROVIDER_INTEGRATIONS.md
+@@ -49,12 +49,18 @@ Every Resource/Service Provider may declare one or more integration modes:
+ 
+ An API-backed provider is not inherently preferred over a manual provider. Operational policy determines selection.
+ 
++Three "mode" concepts are drawn from this same enum but are independent (0.1.4): `Resource.integration_modes` is the catalog capability *set* a Resource declares; `FulfillmentAttempt.integration_mode` is the single mode used for *one* attempt; and `ProviderOffer.fulfillment_mode` is the mode of a *specific offer*. No subset or implication relationship holds between them — a Resource declaring several modes does not require any particular attempt or offer mode, and an attempt/offer mode need not appear in the Resource set beyond what routing policy selects.
++
+ ---
+ 
+ ## 4. Capability ports
+ 
+ The following port names are logical examples. Exact programming-language interface names may vary, but semantics must not.
+ 
++### 4.0 Mandatory manual adapter and registry (0.1.4)
++
++Each capability has a mandatory manual adapter named per capability — `ManualShelterAdapter`, `ManualTransportationPort` adapter, `ManualFoodAdapter`, `ManualPeerSupportAdapter` — rather than a single bare "Manual Adapter". Adapters are addressed through a per-capability registry keyed by capability + adapter id, so routing selects a concrete adapter within a capability. Invariant 8 (manual coordination always available) is satisfied by the manual adapter's guaranteed presence in every capability's registry.
++
+ ### 4.1 TransportationPort
+ 
+ Supports transportation coordination without assuming a rideshare business model. D-017 v0.1.2 selects Uber as the first API-backed transportation adapter family that may implement this port. That selection does not make Uber concepts canonical, does not remove Manual/Fake adapters, and does not authorize real bookings before SPEC-018 readiness.
+-- 
+2.43.0
+
+
+From c4c3e98e26a8b4addb89459a8b29ae32f479b204 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 22 Aug 2026 06:05:05 +0000
+Subject: [PATCH 3/5] specs(0.1.4): codify consent, signal selection, QRF
+ mapping, versioning P-1,P-3,P-17..P-21,P-23
+
+- CONSENT.md: grantee_id typing per grantee_type (P-18); closed permission/scope
+  pairing table (P-19); closed system-basis registry (P-17); interim
+  purpose-matching rule (P-20).
+- SUPPORT_SIGNALS.md: deterministic effective-signal selection rule (P-21).
+- MVP_REFERENCE.md: QRF label -> canonical fact mapping table, RESPONDER_NOTIFIED
+  needs a linked delivery (P-23).
+- VERSIONING.md: manifest overrides stale inline headers (P-1); version-identity
+  table + schema-version mechanism (P-3).
+- ENVIRONMENT.md: schema-version mechanism detail (P-3).
+---
+ CONSENT.md         | 23 ++++++++++++++++++++---
+ ENVIRONMENT.md     |  2 +-
+ MVP_REFERENCE.md   | 14 +++++++++++++-
+ SUPPORT_SIGNALS.md |  4 +++-
+ VERSIONING.md      | 14 +++++++++++++-
+ 5 files changed, 50 insertions(+), 7 deletions(-)
+
+diff --git a/CONSENT.md b/CONSENT.md
+index 985a4db..c663f0f 100644
+--- a/CONSENT.md
++++ b/CONSENT.md
+@@ -29,10 +29,19 @@ A Consent Grant has:
+ 
+ Grants are **revocable, timestamped, versioned, auditable, purpose-scoped**.
+ 
+-### 2.1 Required grant examples (MVP)
++`grantee_id` typing per `grantee_type` (0.1.4): `TRUSTED_CONTACT` → trusted-contact id; `RESPONDER` → user id; `ORGANIZATION` → organization id; `SERVICE_PROVIDER` → provider/adapter id; `SYSTEM` → system-basis code (see §3). `grantee_id` is stored as opaque text keyed this way.
+ 
+-- `can_receive` + `YELLOW` | `ORANGE` | `RED` — whether a Trusted Contact (or other grantee) may be notified at that Support Signal level.
+-- `can_view` + `support_signal` | `checkin_answers` | `current_requests` | `location`.
++### 2.1 Permission/scope pairing (closed, 0.1.4)
++
++The permission→scope pairing is a **closed** table; an evaluation with an unlisted pair is rejected (it is not a valid grant shape). Earlier drafts listed these as "e.g." examples; they are the enforced set.
++
++| `permission` | Allowed `scope` values |
++|---|---|
++| `can_receive` | `YELLOW`, `ORANGE`, `RED` |
++| `can_view` | `support_signal`, `checkin_answers`, `current_requests`, `location` |
++| `can_share` | `service_request_fulfillment` |
++
++- `can_receive` + level — whether a Trusted Contact (or other grantee) may be notified at that Support Signal level.
+ - `can_share` + `service_request_fulfillment` — permits minimum-necessary Service Request data to be disclosed to a named/selected Service Provider for a fulfillment attempt. Location or other sensitive scopes still require explicit coverage when transmitted.
+ 
+ A grant for `YELLOW` does not imply `ORANGE` or `RED`. A grant for `support_signal` does not imply `checkin_answers`. A grant to fulfill a Service Request does not authorize unrelated Case Notes, Check-In answers, Support Signal basis, or Trusted Circle data.
+@@ -53,6 +62,14 @@ A grant for `YELLOW` does not imply `ORANGE` or `RED`. A grant for `support_sign
+ 10. Consent evaluation must occur **before each external mutation that newly discloses data**. A previous quote/search/attempt does not create permanent permission for later booking, reroute, retry, or replacement-provider disclosure.
+ 11. If a provider is replaced or rerouted, consent must cover the new grantee/provider and projection before disclosure.
+ 
++### 3.1 System-basis registry (closed, 0.1.4)
++
++The documented in-product system bases are exactly `{SYSTEM_INTERNAL_PROCESSING, RESPONDER_CASE_ASSIGNMENT}`; any other basis denies. `SYSTEM_INTERNAL_PROCESSING` covers non-disclosing system actions under rule 5 (compute a signal, write an audit row); `RESPONDER_CASE_ASSIGNMENT` covers the least-privilege assigned-Responder access under rule 6. The `consent_basis` recorded on an access Audit Event is therefore one of these two system bases or `CONSENT_GRANT`.
++
++### 3.2 Purpose matching (interim, 0.1.4)
++
++Until a released purpose vocabulary exists, an evaluation matches deterministically on `permission` + `scope` + grantee tuple. `purpose` is recorded on the grant, the `ConsentEvent`, and the access Audit Event but is **not** mechanically compared (rule 4 is satisfied by the permission/scope/grantee match plus the recorded purpose). A released purpose vocabulary — an owner decision, not made here — would make purpose mechanically enforceable.
++
+ ---
+ 
+ ## 4. Revocation
+diff --git a/ENVIRONMENT.md b/ENVIRONMENT.md
+index 43ca3d5..cbea311 100644
+--- a/ENVIRONMENT.md
++++ b/ENVIRONMENT.md
+@@ -168,7 +168,7 @@ These values may be shown in an admin/debug build-info surface without secrets o
+ - Migrations cite the released data/domain contract they implement.
+ - Destructive migrations require an explicit migration/rollback or forward-fix plan.
+ - A code build must reject a database schema state it cannot safely operate against.
+-- Schema compatibility cannot be inferred only from application version; use an explicit migration/schema version mechanism.
++- Schema compatibility cannot be inferred only from application version; use an explicit migration/schema version mechanism. That mechanism (0.1.4): the schema version is a monotonic integer equal to the highest applied numbered migration, recorded in a runner-owned bookkeeping table; the build declares the schema version it requires and refuses to operate against a state below it ([VERSIONING.md](VERSIONING.md) §3).
+ - Rollback must not re-run external provider effects or lose idempotency/event/Settlement/FulfillmentAttempt history.
+ 
+ ## 10. Handoff acceptance
+diff --git a/MVP_REFERENCE.md b/MVP_REFERENCE.md
+index 6548a13..588a40b 100644
+--- a/MVP_REFERENCE.md
++++ b/MVP_REFERENCE.md
+@@ -135,7 +135,19 @@ Production must not:
+ 
+ Truthful states may include `REQUESTED`, `SEARCHING`, `RESPONDER_NOTIFIED`, `RESPONDER_ACCEPTED`, `NO_RESPONDER_CURRENTLY_AVAILABLE`, `DEGRADED`, `CANCELLED` as **UI labels mapped to canonical Case/Request/notification facts**, not new hidden domain states.
+ 
+-`Call` and `Message` appear only when an authorized contact path actually exists.
++QRF label → canonical fact mapping (0.1.4):
++
++| UI label | Canonical fact that backs it |
++|---|---|
++| `REQUESTED` | a `PEER_SUPPORT` Service Request has been created/submitted |
++| `SEARCHING` | the request is in matching (or assigned without a recorded responder notification delivery) — the resting state absent a stronger fact |
++| `RESPONDER_NOTIFIED` | a Notification about **this** request, addressed to the active responder, reached a sent/delivered status ([DATA_MODEL.md](DATA_MODEL.md) §9 subject reference); absent that linked delivery the surface rests on `SEARCHING` |
++| `RESPONDER_ACCEPTED` | the request/assignment records responder acceptance evidence |
++| `NO_RESPONDER_CURRENTLY_AVAILABLE` | matching is exhausted with no available responder |
++| `DEGRADED` | a truthful degraded/no-availability operational state |
++| `CANCELLED` | the request reached `CANCELLED` |
++
++`RESPONDER_NOTIFIED` specifically requires a recorded delivery linked to the request; an assignment alone is not sufficient. `Call` and `Message` appear only when an authorized contact path actually exists.
+ 
+ Class: `MUST_CHANGE_FOR_PRODUCTION` semantics, `MUST_PRESERVE_BEHAVIOR` interaction.
+ 
+diff --git a/SUPPORT_SIGNALS.md b/SUPPORT_SIGNALS.md
+index 6a5b494..2cf24ad 100644
+--- a/SUPPORT_SIGNALS.md
++++ b/SUPPORT_SIGNALS.md
+@@ -116,7 +116,9 @@ No silent mutation of historical calculations.
+ - Red-state behavior in [SAFETY.md](SAFETY.md) applies to the effective signal used for coordination.
+ - Lowering a `RED` is audited and cannot retroactively remove already-surfaced safety UI or historical actions.
+ 
+-The exact rule for selecting the current effective signal from a chain of primary calculations/overrides must be deterministic and reconciled in [DATA_MODEL.md](DATA_MODEL.md) / [CASES.md](CASES.md) before release; implementation must not infer it from row insertion order alone.
++### 7.1 Effective-signal selection (deterministic, 0.1.4)
++
++The current effective signal is selected deterministically from the chain of primary calculations/overrides: the **most recent by `computed_at`**, with ties broken by **`support_signal_id` descending**, and an `OVERRIDE` **superseding the signal it overrides**. This is selection, not scoring, and is independent of the D-011 threshold decision; implementation must never infer it from row insertion order alone. Reconciled into [DATA_MODEL.md](DATA_MODEL.md) §4. (Owner-confirm follow-up: behavior when two overrides target the same signal.)
+ 
+ ---
+ 
+diff --git a/VERSIONING.md b/VERSIONING.md
+index 809f4a5..70f68eb 100644
+--- a/VERSIONING.md
++++ b/VERSIONING.md
+@@ -8,6 +8,8 @@
+ 
+ Each specification artifact lifecycle is `draft`, `accepted`, `released`, or `superseded`. Preflight is not a lifecycle state. For a named release, the release manifest is the lifecycle authority for listed artifacts.
+ 
++A file's inline `draft` / `dependency-blocked` header is **superseded by the current release manifest's released-artifact set** (0.1.4): where an inline header and the manifest disagree, the manifest governs, and a stale inline `draft` marker on a manifest-released file is not authority. SPEC-0xx acceptance records state their stack version as of the current manifest.
++
+ ## 2. Semantic versioning
+ 
+ - `0.1.0` — first implementation-authoritative release.
+@@ -31,9 +33,19 @@ Do not conflate:
+ 2. **Application version** — owned by `scrimshawlife-ctrl/SUAS`; must declare which released spec it implements.
+ 3. **API version** — `/api/v0`; unchanged by v0.1.3.
+ 4. **Event schema version** — `0.1.0`; unchanged by v0.1.3.
+-5. **Database migration/schema version** — implementation-owned mechanism that must be explicit and compatibility-checked.
++5. **Database migration/schema version** — implementation-owned mechanism that must be explicit and compatibility-checked. Mechanism (0.1.4): the schema version is a monotonic integer equal to the highest applied numbered migration, recorded in a runner-owned bookkeeping table, and the build states the version it requires explicitly rather than inferring it from the application version ([ENVIRONMENT.md](ENVIRONMENT.md) §9).
+ 6. **Runtime content versions** — QuestionnaireVersion, signal_version, consent/notification templates, approved safety copy when available.
+ 
++These five parallel identities (plus runtime content versions) are distinct and independently versioned:
++
++| Identity | Current value / mechanism |
++|---|---|
++| Specification stack | `0.1.4` |
++| Application version | owned by `scrimshawlife-ctrl/SUAS`; declares the released spec it implements |
++| API selector | `/api/v0` |
++| Event schema | `0.1.0` |
++| Database schema | monotonic integer = highest applied numbered migration (runner-owned table) |
++
+ ## 4. Build provenance
+ 
+ Shared builds must expose application version/commit, released SUAS spec version, release manifest identifier, database/schema migration version where applicable, build timestamp/version, and environment class. See [ENVIRONMENT.md](ENVIRONMENT.md).
+-- 
+2.43.0
+
+
+From f0285363015c1045516216de4a26de1cd77e3efd Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 22 Aug 2026 06:08:01 +0000
+Subject: [PATCH 4/5] =?UTF-8?q?specs(0.1.4):=20release=20machinery=20?=
+ =?UTF-8?q?=E2=80=94=20manifest,=20changelog,=20versioning=20lineage,=20RE?=
+ =?UTF-8?q?ADME/HANDOFF=20pointers?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Add RELEASE_MANIFEST-0.1.4.md (conformance-codification patch; inherits all
+  decision ledgers; closes no D-0xx; NOT_READY unchanged).
+- CHANGELOG.md: 0.1.4 released entry.
+- VERSIONING.md: 0.1.4 semver line + lineage + stack header + identity table.
+- README.md / HANDOFF.md: stack pointers bumped to 0.1.4.
+
+Owner merge of this branch ratifies the 0.1.4 release.
+---
+ CHANGELOG.md              | 12 +++++++
+ HANDOFF.md                | 12 +++----
+ README.md                 | 10 +++---
+ RELEASE_MANIFEST-0.1.4.md | 74 +++++++++++++++++++++++++++++++++++++++
+ VERSIONING.md             | 13 +++----
+ 5 files changed, 104 insertions(+), 17 deletions(-)
+ create mode 100644 RELEASE_MANIFEST-0.1.4.md
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 4379445..0de683e 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -22,6 +22,18 @@ No implementation code is included.
+ 
+ ---
+ 
++## 0.1.4 — 2026-08-22 — `released`
++
++**Implementation-conformance codification patch. Closes no owner decision; no product roles, safety/privacy, API selector, or event-schema change; production readiness unchanged.**
++
++- Added [RELEASE_MANIFEST-0.1.4.md](RELEASE_MANIFEST-0.1.4.md), superseding v0.1.3 while inheriting every decision ledger (D-017/D-018/D-001–D-025) unchanged.
++- Adopted accepted Bucket I gaps P-1 through P-23 (from `scrimshawlife-ctrl/SUAS` `docs/SPEC_DESIGN_GAPS.md` / `docs/SPEC_GAP_PROPOSALS.md`) into DATA_MODEL, NOTIFICATIONS, RESOURCES, REFERRALS, AUTH, CASES, FOLLOWUP, DISPATCH, PROVIDER_INTEGRATIONS, FULFILLMENT, CONSENT, SUPPORT_SIGNALS, MVP_REFERENCE, VERSIONING, and ENVIRONMENT. Each change codifies implemented+tested behavior or is a pure editorial clarification; none invents product/domain behavior.
++- Documented two additive, backward-compatible logical-model fields already carried by merged, tested implementation: `notifications.subject_type`/`subject_id` (P-12, makes MVP `RESPONDER_NOTIFIED` truthfully reachable) and `resources.contact_method_kind` (P-13, enables direct call/email/web actions). Both additive and nullable; absent them prior behavior is unchanged. Adopted at patch level as owner-accepted codifications with this explicit notice (VERSIONING.md §2).
++- Bucket II (`D-0xx`) owner decisions and Bucket III contradictions remain owner-only and unaddressed.
++- Production/pilot readiness, real veteran data, and real external provider effects remain `NOT_READY` / prohibited until SPEC-018.
++
++---
++
+ ## 0.1.3 — 2026-08-19 — `released`
+ 
+ **D-018 shelter adapter decision patch. Product/domain/API semantics and production readiness unchanged.**
+diff --git a/HANDOFF.md b/HANDOFF.md
+index 0e14001..c2e3c6d 100644
+--- a/HANDOFF.md
++++ b/HANDOFF.md
+@@ -1,15 +1,15 @@
+-# HANDOFF.md — Implementation handoff guide (SUAS v0.1.3)
++# HANDOFF.md — Implementation handoff guide (SUAS v0.1.4)
+ 
+ **Audience:** new implementation owner / Fable / engineering agents
+-**Lifecycle:** `released` with v0.1.3 D-018 patch
++**Lifecycle:** `released` with v0.1.4 conformance-codification patch (over v0.1.3 D-018)
+ **Canonical implementation repo:** `scrimshawlife-ctrl/SUAS`
+ 
+ ## 1. Start here
+ 
+ Read in this order before changing implementation behavior:
+ 
+-1. `RELEASE_MANIFEST-0.1.3.md`
+-2. `RELEASE_DECISIONS-0.1.3.md` for D-018, `RELEASE_DECISIONS-0.1.2.md` for D-017, plus `RELEASE_DECISIONS-0.1.0.md` for inherited decisions
++1. `RELEASE_MANIFEST-0.1.4.md` (then `RELEASE_MANIFEST-0.1.3.md` for inherited D-018 scope)
++2. `RELEASE_DECISIONS-0.1.3.md` for D-018, `RELEASE_DECISIONS-0.1.2.md` for D-017, plus `RELEASE_DECISIONS-0.1.0.md` for inherited decisions (v0.1.4 closes no new decision)
+ 3. `STATUS.md`
+ 4. `PRODUCT.md`
+ 5. `GLOSSARY.md`
+@@ -28,7 +28,7 @@ If any implementation requirement conflicts, the release manifest and later rele
+ 
+ ## 2. Current lifecycle
+ 
+-- Released implementation contract: `0.1.3`
++- Released implementation contract: `0.1.4`
+ - Current implementation stage: `SPEC-017`
+ - Production/pilot readiness: `NOT_READY`
+ - Real veteran data: prohibited
+@@ -92,7 +92,7 @@ Do not create provider credential files or real-data fixtures.
+ 
+ Three version identities must not be conflated:
+ 
+-1. **Specification stack version** — currently `0.1.3`.
++1. **Specification stack version** — currently `0.1.4`.
+ 2. **Application version** — chosen/maintained in `SUAS`; must identify which released spec it conforms to.
+ 3. **Runtime artifact/schema versions** — API `/api/v0`, event schema, DB migration/schema version, QuestionnaireVersion, signal version, templates, etc.
+ 
+diff --git a/README.md b/README.md
+index 09a79fa..96dd0b5 100644
+--- a/README.md
++++ b/README.md
+@@ -1,12 +1,12 @@
+-# Shut Up and Serve (SUAS) — Specification v0.1.3
++# Shut Up and Serve (SUAS) — Specification v0.1.4
+ 
+ **Product:** Shut Up and Serve
+ **System:** SUAS
+-**Version:** `0.1.3`
++**Version:** `0.1.4`
+ **Lifecycle:** `released`
+ **Phase:** `IMPLEMENTATION_AUTHORIZED`
+ **Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`
+-**Release manifest:** [RELEASE_MANIFEST-0.1.3.md](RELEASE_MANIFEST-0.1.3.md)
++**Release manifest:** [RELEASE_MANIFEST-0.1.4.md](RELEASE_MANIFEST-0.1.4.md)
+ 
+ `SUAS-specs` is canonical. `scrimshawlife-ctrl/SUAS` implements released contracts and may not redefine them from code, prototype behavior, provider behavior, deployment state, or traction.
+ 
+@@ -14,7 +14,7 @@ The weekend-build document **HACKATHON BUILD SPECIFICATION Rev 3 (2026-08-14)**
+ 
+ ## Start here for implementation / Fable handoff
+ 
+-1. [RELEASE_MANIFEST-0.1.3.md](RELEASE_MANIFEST-0.1.3.md)
++1. [RELEASE_MANIFEST-0.1.4.md](RELEASE_MANIFEST-0.1.4.md)
+ 2. [HANDOFF.md](HANDOFF.md)
+ 3. [ENVIRONMENT.md](ENVIRONMENT.md)
+ 4. [STATUS.md](STATUS.md)
+@@ -48,7 +48,7 @@ SUAS is not an EHR, diagnosis system, suicide-prediction product, automated emer
+ - Production readiness: `NOT_READY`
+ - All 12 readiness gates: `NOT_READY`
+ 
+-v0.1.3 is a D-018 shelter adapter decision patch over v0.1.2. Product/domain/API semantics are unchanged; Amadeus may be implemented adapter-locally for commercial shelter search/inventory behind `TemporaryShelterPort`, `ManualShelterAdapter` remains mandatory, and production use remains blocked.
++v0.1.4 is an implementation-conformance codification patch over v0.1.3. It adopts accepted Bucket I gaps (P-1..P-23) that codify already-implemented behavior or clarify editorially; it closes no owner decision and changes no product/domain/API semantics, safety/privacy, or readiness. v0.1.3 (inherited) is a D-018 shelter adapter decision patch: Amadeus may be implemented adapter-locally for commercial shelter search/inventory behind `TemporaryShelterPort`, `ManualShelterAdapter` remains mandatory, and production use remains blocked.
+ 
+ ## Environment and configuration
+ 
+diff --git a/RELEASE_MANIFEST-0.1.4.md b/RELEASE_MANIFEST-0.1.4.md
+new file mode 100644
+index 0000000..562dd23
+--- /dev/null
++++ b/RELEASE_MANIFEST-0.1.4.md
+@@ -0,0 +1,74 @@
++# RELEASE_MANIFEST-0.1.4.md — SUAS implementation-conformance codification release
++
++**Release version:** `0.1.4`
++**Release date:** `2026-08-22` PT
++**Owner:** `@scrimshawlife-ctrl`
++**Supersedes:** `0.1.3`
++**Base release:** [RELEASE_MANIFEST-0.1.3.md](RELEASE_MANIFEST-0.1.3.md)
++**Decision ledgers:** inherited unchanged — [RELEASE_DECISIONS-0.1.3.md](RELEASE_DECISIONS-0.1.3.md) for D-018; [RELEASE_DECISIONS-0.1.2.md](RELEASE_DECISIONS-0.1.2.md) for D-017; [RELEASE_DECISIONS-0.1.0.md](RELEASE_DECISIONS-0.1.0.md) otherwise. **v0.1.4 closes no D-0xx owner decision.**
++**Lifecycle:** `released` (ratified by owner merge of this patch)
++**Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`
++**Production readiness:** `NOT_READY`
++
++## Patch scope
++
++v0.1.4 is an implementation-conformance codification patch. It adopts the accepted **Bucket I** (editorial / underspecified) specification gaps surfaced during SPEC-017 implementation and catalogued in `scrimshawlife-ctrl/SUAS` `docs/SPEC_DESIGN_GAPS.md` / `docs/SPEC_GAP_PROPOSALS.md` (proposals P-1 through P-23).
++
++Every change either (a) codifies a mechanism the implementation already runs and tests, or (b) is a pure editorial clarification (authority labeling, a mapping table, or an enumeration already closed in code). It **invents no new product/domain behavior**, makes and closes **no owner decision**, and changes **no** product roles, safety/privacy principles, readiness gates, API selector (`/api/v0`), or event schema (`0.1.0`).
++
++Two additive, backward-compatible logical-model fields are documented because merged, tested implementation already carries them and two released MVP surfaces depend on them for truthfulness:
++
++- `notifications.subject_type` + `subject_id` (P-12), which makes MVP `RESPONDER_NOTIFIED` truthfully reachable;
++- `resources.contact_method_kind` (P-13), which lets the veteran resource list offer a direct call/email/web action instead of guessing a scheme from free text.
++
++Both are additive and nullable; absent them, prior behavior is unchanged. Under a strict reading these are backward-compatible contract *additions*; this patch adopts them at patch level as owner-accepted codifications with this explicit changelog notice (VERSIONING.md §2).
++
++## Adopted gaps
++
++| Proposal | Target artifacts |
++|---|---|
++| P-1 lifecycle-header vs manifest reconciliation | VERSIONING.md |
++| P-2 Follow-Up `coordination_attempt_count` naming | FOLLOWUP.md |
++| P-3 version-identity set + schema-version mechanism | VERSIONING.md, ENVIRONMENT.md |
++| P-4 category ↔ capability ↔ port mapping | FULFILLMENT.md |
++| P-5 three independent "mode" concepts | PROVIDER_INTEGRATIONS.md |
++| P-6 mandatory per-capability manual adapter + registry | PROVIDER_INTEGRATIONS.md |
++| P-7 closed Service Request cancel/expiry/escalation sets | DISPATCH.md |
++| P-8 "blocking" Service Request definition | CASES.md |
++| P-9 `ACTIVATE` as the only `ASSIGNED → ACTIVE` edge | CASES.md |
++| P-10 Follow-Up reschedule/overdue handling | FOLLOWUP.md |
++| P-11 `CLOSED → OPEN` sole reopen edge | CASES.md |
++| P-12 notification subject reference | DATA_MODEL.md, NOTIFICATIONS.md |
++| P-13 structured `contact_method_kind` + typed referral destination | RESOURCES.md, REFERRALS.md |
++| P-14 Follow-Up `responsible_type` enum + `referral_id` | DATA_MODEL.md, FOLLOWUP.md |
++| P-15 SUAS-admin auditable grant record | DATA_MODEL.md, AUTH.md |
++| P-16 assignment/fulfillment projection + reconciliation sub-state | DATA_MODEL.md, DISPATCH.md |
++| P-17 closed system-basis registry | CONSENT.md |
++| P-18 `grantee_id` typing per `grantee_type` | CONSENT.md |
++| P-19 closed permission/scope pairing | CONSENT.md |
++| P-20 interim purpose-matching rule | CONSENT.md |
++| P-21 deterministic effective-signal selection | SUPPORT_SIGNALS.md, DATA_MODEL.md |
++| P-22 `priority_signal_level` on the Case | CASES.md, DATA_MODEL.md |
++| P-23 QRF label → canonical fact mapping | MVP_REFERENCE.md |
++
++## Released artifact set
++
++All artifacts released by v0.1.3 remain released. v0.1.4 additionally releases this manifest and the patch-level clarifications above to DATA_MODEL.md, NOTIFICATIONS.md, RESOURCES.md, REFERRALS.md, AUTH.md, CASES.md, FOLLOWUP.md, DISPATCH.md, PROVIDER_INTEGRATIONS.md, FULFILLMENT.md, CONSENT.md, SUPPORT_SIGNALS.md, MVP_REFERENCE.md, VERSIONING.md, and ENVIRONMENT.md. Per VERSIONING.md §1, this manifest's released-artifact set overrides any stale inline `draft` header on a listed file.
++
++Draft Rev 3 files remain draft unless explicitly marked otherwise. They are not redefined by this release.
++
++## Runtime pins
++
++- Expected specification stack identifier: `0.1.4`.
++- API contract remains `/api/v0`; product/domain/API semantics are unchanged.
++- Event schema remains `0.1.0`.
++- Database schema version is the implementation-owned monotonic integer (highest applied numbered migration), declared explicitly by the build (VERSIONING.md §3, ENVIRONMENT.md §9).
++- Production QuestionnaireVersion, Support Signal scoring/thresholds (D-011), official safety copy (D-012), production deployment, live pilot operation, real external provider effects, and sensitive aggregate reporting remain unavailable.
++
++## Not closed by this release
++
++The Bucket II (`D-0xx`) owner decisions and Bucket III contradictions catalogued in `docs/SPEC_DESIGN_GAPS.md` remain owner-only and are **not** addressed: notably D-011 thresholds, D-012 crisis copy/destinations, PARTIAL/DISPUTED/FAILED policy (G-I-6/7/8), Settlement summary shape (G-I-19), category-required-details (G-I-20), the signal-driven case command (G-I-28 action), responder on-duty / chat / dashboard-metric / Quick-Share contracts (G-I-30..33), auth timing/rate-limit constants (G-I-34), tenant resolution at sign-in (G-I-35), notification template vocabulary (G-I-37), and the consent-template publication surface (G-I-38).
++
++## Readiness boundary
++
++This patch makes no readiness gate `READY` and does not authorize production deployment, real veteran data, live pilot operation, real provider side effects, or payment-card handling. SPEC-017 implementation conformance plus SPEC-018 readiness evidence remain required.
+diff --git a/VERSIONING.md b/VERSIONING.md
+index 70f68eb..4312336 100644
+--- a/VERSIONING.md
++++ b/VERSIONING.md
+@@ -1,8 +1,8 @@
+ # VERSIONING.md — Specification and artifact versioning (SUAS v0.1)
+ 
+-**Stack:** `0.1.3` / `released`
++**Stack:** `0.1.4` / `released`
+ **Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`
+-**Release manifest:** [RELEASE_MANIFEST-0.1.3.md](RELEASE_MANIFEST-0.1.3.md)
++**Release manifest:** [RELEASE_MANIFEST-0.1.4.md](RELEASE_MANIFEST-0.1.4.md)
+ 
+ ## 1. Lifecycle
+ 
+@@ -16,6 +16,7 @@ A file's inline `draft` / `dependency-blocked` header is **superseded by the cur
+ - `0.1.1` — patch-level handoff/environment clarification; no product/domain/API semantic change.
+ - `0.1.2` — D-017 transportation adapter decision patch selecting Uber for adapter-local implementation; no product/domain/API semantic change and no production-operating approval.
+ - `0.1.3` — D-018 shelter adapter decision patch selecting Amadeus for adapter-local commercial search/inventory, with mandatory manual fallback and payment-architecture guardrails; no product/domain/API semantic change and no production-operating approval.
++- `0.1.4` — implementation-conformance codification patch adopting accepted Bucket I gaps (P-1..P-23); closes no D-0xx owner decision and changes no product roles, safety/privacy, API selector, or event schema. Documents two additive, backward-compatible logical-model fields already implemented and tested (`notifications` subject reference, `resources.contact_method_kind`) as owner-accepted codifications with this changelog notice.
+ 
+ Version rules:
+ 
+@@ -29,10 +30,10 @@ Git commit SHA is provenance, not the specification version.
+ 
+ Do not conflate:
+ 
+-1. **Specification stack version** — currently `0.1.3`.
++1. **Specification stack version** — currently `0.1.4`.
+ 2. **Application version** — owned by `scrimshawlife-ctrl/SUAS`; must declare which released spec it implements.
+-3. **API version** — `/api/v0`; unchanged by v0.1.3.
+-4. **Event schema version** — `0.1.0`; unchanged by v0.1.3.
++3. **API version** — `/api/v0`; unchanged by v0.1.4.
++4. **Event schema version** — `0.1.0`; unchanged by v0.1.4.
+ 5. **Database migration/schema version** — implementation-owned mechanism that must be explicit and compatibility-checked. Mechanism (0.1.4): the schema version is a monotonic integer equal to the highest applied numbered migration, recorded in a runner-owned bookkeeping table, and the build states the version it requires explicitly rather than inferring it from the application version ([ENVIRONMENT.md](ENVIRONMENT.md) §9).
+ 6. **Runtime content versions** — QuestionnaireVersion, signal_version, consent/notification templates, approved safety copy when available.
+ 
+@@ -52,7 +53,7 @@ Shared builds must expose application version/commit, released SUAS spec version
+ 
+ ## 5. Release lineage
+ 
+-`0.1.1` supersedes `0.1.0` for implementation handoff. `0.1.2` supersedes `0.1.1` for D-017 adapter selection. `0.1.3` supersedes `0.1.2` for D-018 adapter selection. [RELEASE_DECISIONS-0.1.3.md](RELEASE_DECISIONS-0.1.3.md) controls D-018; [RELEASE_DECISIONS-0.1.2.md](RELEASE_DECISIONS-0.1.2.md) controls D-017; [RELEASE_DECISIONS-0.1.0.md](RELEASE_DECISIONS-0.1.0.md) remains inherited for other D-001–D-025 decisions.
++`0.1.1` supersedes `0.1.0` for implementation handoff. `0.1.2` supersedes `0.1.1` for D-017 adapter selection. `0.1.3` supersedes `0.1.2` for D-018 adapter selection. `0.1.4` supersedes `0.1.3` for implementation-conformance codification and inherits every decision ledger unchanged. [RELEASE_DECISIONS-0.1.3.md](RELEASE_DECISIONS-0.1.3.md) controls D-018; [RELEASE_DECISIONS-0.1.2.md](RELEASE_DECISIONS-0.1.2.md) controls D-017; [RELEASE_DECISIONS-0.1.0.md](RELEASE_DECISIONS-0.1.0.md) remains inherited for other D-001–D-025 decisions.
+ 
+ ## 6. Implementation citations
+ 
+-- 
+2.43.0
+
+
+From 7af94e71ce71d94b52099baf12f37a1e116278e7 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 22 Aug 2026 06:23:09 +0000
+Subject: [PATCH 5/5] specs(0.1.4): align subject_type/destination_type enum
+ casing with merged implementation
+
+The P-12/P-13 codifications must match the values the merged implementation
+actually stores (they codify implemented behavior):
+- notifications.subject_type: SupportCase|ServiceRequest|Referral (impl stores
+  'ServiceRequest'; matches Domain/Audit aggregate-type naming), not UPPER_SNAKE.
+- referrals.destination_type: Resource|ServiceProvider|Organization|External
+  (impl/test stores 'Organization'), not UPPER_SNAKE.
+- suas_admin_grants PK named admin_grant_id (matches src/identity/admins.ts).
+---
+ DATA_MODEL.md    | 4 ++--
+ NOTIFICATIONS.md | 2 +-
+ REFERRALS.md     | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/DATA_MODEL.md b/DATA_MODEL.md
+index d35c955..29513aa 100644
+--- a/DATA_MODEL.md
++++ b/DATA_MODEL.md
+@@ -33,7 +33,7 @@
+ Canonical organization, role, membership status, queue-availability fields and timestamps. Active membership/role is authoritative at mutation time.
+ 
+ ### suas_admin_grants
+-The global SUAS-admin role is an auditable grant record (0.1.4), not a boolean on the user row: `grant_id`, `user_id`, `granted_by`, nullable `revoked_by`, `status = ACTIVE|REVOKED`, and grant/revoke timestamps. "Who made this person a SUAS admin, and when" is answerable from history; a user is a SUAS admin iff they hold an `ACTIVE` grant. See [AUTH.md](AUTH.md) §6.
++The global SUAS-admin role is an auditable grant record (0.1.4), not a boolean on the user row: `admin_grant_id`, `user_id`, `granted_by`, nullable `revoked_by`, `status = ACTIVE|REVOKED`, and grant/revoke timestamps. "Who made this person a SUAS admin, and when" is answerable from history; a user is a SUAS admin iff they hold an `ACTIVE` grant. See [AUTH.md](AUTH.md) §6.
+ 
+ ---
+ 
+@@ -135,7 +135,7 @@ User/channel/enabled state.
+ ### notifications
+ - PK `notification_id`; tenant; recipient; reason/policy key; channel; consent/system basis; template version.
+ - `dedupe_key`/logical-send identity when generating policy can be delivered more than once.
+-- optional subject reference `subject_type` + `subject_id` (0.1.4) linking a logical send to the workflow entity it was sent for; `subject_type` is one of `SUPPORT_CASE|SERVICE_REQUEST|REFERRAL` and `subject_id` is that entity's id in the same tenant. Additive and nullable; existing sends and dedupe are unchanged.
++- optional subject reference `subject_type` + `subject_id` (0.1.4) linking a logical send to the workflow entity it was sent for; `subject_type` is one of the canonical entity-type names `SupportCase|ServiceRequest|Referral` (matching the aggregate-type naming used on Domain/Audit Events) and `subject_id` is that entity's id in the same tenant. Additive and nullable; existing sends and dedupe are unchanged.
+ - canonical delivery status `QUEUED|SENT|FAILED|DELIVERED|BOUNCED|UNDELIVERABLE`; attempt count/last attempt/sent timestamps.
+ - one row per logical send; transport attempt history lives in immutable Audit Events under current contract.
+ - dedupe uniqueness is scoped by tenant + recipient/channel/reason/policy as defined by the generating policy; deliberate reminder/escalation gets a new logical identity.
+diff --git a/NOTIFICATIONS.md b/NOTIFICATIONS.md
+index 5cde0e5..2190060 100644
+--- a/NOTIFICATIONS.md
++++ b/NOTIFICATIONS.md
+@@ -39,7 +39,7 @@ Required logical fields:
+ - channel;
+ - `consent_basis` or documented system basis;
+ - `template_version`;
+-- optional subject reference `subject_type` + `subject_id` (0.1.4) linking the send to the workflow entity it was sent for, where `subject_type ∈ {SUPPORT_CASE, SERVICE_REQUEST, REFERRAL}`; additive and nullable, and required for MVP `RESPONDER_NOTIFIED` to be truthfully reachable ([MVP_REFERENCE.md](MVP_REFERENCE.md) §7.2, [DATA_MODEL.md](DATA_MODEL.md) §9);
++- optional subject reference `subject_type` + `subject_id` (0.1.4) linking the send to the workflow entity it was sent for, where `subject_type ∈ {SupportCase, ServiceRequest, Referral}` (the canonical entity-type names); additive and nullable, and required for MVP `RESPONDER_NOTIFIED` to be truthfully reachable ([MVP_REFERENCE.md](MVP_REFERENCE.md) §7.2, [DATA_MODEL.md](DATA_MODEL.md) §9);
+ - logical-send `dedupe_key`/equivalent deterministic identity where the generating policy can be delivered more than once;
+ - `delivery_status`;
+ - `attempt_count`, `last_attempt_at`, `sent_at` as applicable;
+diff --git a/REFERRALS.md b/REFERRALS.md
+index 57d8216..745fee1 100644
+--- a/REFERRALS.md
++++ b/REFERRALS.md
+@@ -16,7 +16,7 @@ A **Referral** is a directed, consented handoff to a destination Resource or Ser
+ ## 2. Required content
+ 
+ - `consent_grant_id` or documented accepted system basis that authorizes the destination/payload at send time;
+-- destination as a typed `{destination_type, destination_id}` (0.1.4), where `destination_type` is the closed set `RESOURCE|SERVICE_PROVIDER|ORGANIZATION|EXTERNAL` and `destination_id` references the entity of that type (for `EXTERNAL`, an opaque recorded reference for a destination not modeled as a SUAS entity);
++- destination as a typed `{destination_type, destination_id}` (0.1.4), where `destination_type` is the closed set of canonical entity-type names `Resource|ServiceProvider|Organization|External` and `destination_id` references the entity of that type (for `External`, an opaque recorded reference for a destination not modeled as a SUAS entity);
+ - reason;
+ - method (`IN_APP`, `PHONE`, `EMAIL`, or accepted future method);
+ - status;
+-- 
+2.43.0
+
