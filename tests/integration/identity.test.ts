@@ -12,17 +12,21 @@ import {
   createMembership,
   createOrganization,
   createUser,
+  findOrganization,
   findUserByDestination,
   findUserById,
   grantSuasAdmin,
   isSuasAdmin,
   listActiveMemberships,
+  MembershipTerminalError,
   NoEnrolledChannelError,
+  OrganizationTerminalError,
   revokeSuasAdmin,
   setMembershipStatus,
   setOrganizationStatus,
   setUserStatus,
   softDeleteUser,
+  UserTerminalError,
 } from '../../src/identity/index.js';
 import { createTestPool, resetKernelTables, syntheticTenantId } from '../helpers/db.js';
 import { syntheticEmail, syntheticPhone } from '../../src/testing/fixture-boundary.js';
@@ -114,6 +118,16 @@ describe('DOMAIN_MODEL.md §2 — users', () => {
     expect((await setUserStatus(pool, tenantId, user.userId, 'REVOKED'))?.status).toBe('REVOKED');
   });
 
+  it('refuses to reactivate a REVOKED user (terminal)', async () => {
+    const tenantId = syntheticTenantId();
+    const user = await activeUser(tenantId);
+    await setUserStatus(pool, tenantId, user.userId, 'REVOKED');
+    await expect(setUserStatus(pool, tenantId, user.userId, 'ACTIVE')).rejects.toThrow(
+      UserTerminalError,
+    );
+    expect((await findUserById(pool, tenantId, user.userId))?.status).toBe('REVOKED');
+  });
+
   it('will not change a user in another tenant', async () => {
     const tenantId = syntheticTenantId();
     const user = await activeUser(tenantId);
@@ -184,10 +198,27 @@ describe('AUTH.md §6 — active membership confers authority', () => {
     expect(await listActiveMemberships(pool, user.userId)).toEqual([]);
   });
 
+  it('refuses to reactivate a REVOKED membership (terminal)', async () => {
+    const { tenantId, membership } = await activeMembership();
+    await setMembershipStatus(pool, tenantId, membership.membershipId, 'REVOKED');
+    await expect(
+      setMembershipStatus(pool, tenantId, membership.membershipId, 'ACTIVE'),
+    ).rejects.toThrow(MembershipTerminalError);
+  });
+
   it('drops authority when the organization itself is suspended', async () => {
     const { tenantId, user, org } = await activeMembership();
     await setOrganizationStatus(pool, tenantId, org.organizationId, 'SUSPENDED');
     expect(await listActiveMemberships(pool, user.userId)).toEqual([]);
+  });
+
+  it('refuses to reactivate an ARCHIVED organization (terminal)', async () => {
+    const { tenantId, org } = await activeMembership();
+    await setOrganizationStatus(pool, tenantId, org.organizationId, 'ARCHIVED');
+    await expect(
+      setOrganizationStatus(pool, tenantId, org.organizationId, 'ACTIVE'),
+    ).rejects.toThrow(OrganizationTerminalError);
+    expect((await findOrganization(pool, tenantId, org.organizationId))?.status).toBe('ARCHIVED');
   });
 
   it('does not treat an invited membership as active', async () => {

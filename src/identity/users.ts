@@ -72,6 +72,24 @@ export class NoEnrolledChannelError extends Error {
   }
 }
 
+/**
+ * DOMAIN_MODEL.md §2: the User lifecycle ends at `REVOKED`, and "revoked users
+ * cannot authenticate/act". A revoked user must not be reactivated (that would
+ * silently restore the ability to authenticate); re-onboarding is a new user.
+ */
+export class UserTerminalError extends Error {
+  readonly code = 'UNPROCESSABLE';
+  readonly httpStatus = 422;
+
+  constructor() {
+    super(
+      'A REVOKED user is terminal and cannot change status; revoked users cannot authenticate ' +
+        'or act (SUAS-specs DOMAIN_MODEL.md §2; AUTH.md §6).',
+    );
+    this.name = 'UserTerminalError';
+  }
+}
+
 export async function createUser(db: Queryable, input: CreateUserInput): Promise<User> {
   const email = input.email === undefined ? null : normalizeDestination(input.email);
   const phone = input.phone === undefined ? null : normalizeDestination(input.phone);
@@ -140,11 +158,19 @@ export async function setUserStatus(
   const result = await db.query<UserRow>(
     `UPDATE users SET status = $3, updated_at = now()
      WHERE tenant_id = $1 AND user_id = $2 AND deleted_at IS NULL
+       AND status <> 'REVOKED'
      RETURNING ${USER_COLUMNS}`,
     [tenantId, userId, status],
   );
   const row = result.rows[0];
-  return row === undefined ? undefined : toUser(row);
+  if (row === undefined) {
+    // Distinguish "no such live user" (undefined, as before) from a refused
+    // transition out of the terminal REVOKED state.
+    const existing = await findUserById(db, tenantId, userId);
+    if (existing?.status === 'REVOKED') throw new UserTerminalError();
+    return undefined;
+  }
+  return toUser(row);
 }
 
 /**
