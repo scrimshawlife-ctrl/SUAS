@@ -58,6 +58,9 @@ export interface Notification {
   readonly consentBasis: string;
   readonly templateVersion: string;
   readonly dedupeKey: string | undefined;
+  /** Workflow entity this send is about, e.g. `ServiceRequest`. P-12. */
+  readonly subjectType: string | undefined;
+  readonly subjectId: string | undefined;
   readonly deliveryStatus: DeliveryStatus;
   readonly attemptCount: number;
   readonly maxAttempts: number;
@@ -75,6 +78,8 @@ interface NotificationRow {
   consent_basis: string;
   template_version: string;
   dedupe_key: string | null;
+  subject_type: string | null;
+  subject_id: string | null;
   delivery_status: DeliveryStatus;
   attempt_count: number;
   max_attempts: number;
@@ -84,8 +89,8 @@ interface NotificationRow {
 
 const NOTIFICATION_COLUMNS = `
   notification_id, tenant_id, recipient_user_id, destination, reason, channel,
-  consent_basis, template_version, dedupe_key, delivery_status, attempt_count,
-  max_attempts, sent_at, cancelled_at
+  consent_basis, template_version, dedupe_key, subject_type, subject_id,
+  delivery_status, attempt_count, max_attempts, sent_at, cancelled_at
 `;
 
 function toNotification(row: NotificationRow): Notification {
@@ -99,6 +104,8 @@ function toNotification(row: NotificationRow): Notification {
     consentBasis: row.consent_basis,
     templateVersion: row.template_version,
     dedupeKey: row.dedupe_key ?? undefined,
+    subjectType: row.subject_type ?? undefined,
+    subjectId: row.subject_id ?? undefined,
     deliveryStatus: row.delivery_status,
     attemptCount: row.attempt_count,
     maxAttempts: row.max_attempts,
@@ -140,6 +147,12 @@ export interface EnqueueNotificationInput {
   readonly templateVersion: string;
   /** Deterministic identity when the generating policy can be delivered twice. */
   readonly dedupeKey?: string;
+  /**
+   * Workflow entity this send is about (e.g. `ServiceRequest` + its id), so a
+   * delivery can be joined back to the request/case/referral it concerns. P-12.
+   */
+  readonly subjectType?: string;
+  readonly subjectId?: string;
   /**
    * The disclosure this send would make. Present when the recipient is a third
    * party; absent when the action discloses to nobody outside SUAS, in which case
@@ -219,8 +232,8 @@ export async function enqueueNotification(
   const inserted = await pool.query<NotificationRow>(
     `INSERT INTO notifications
        (notification_id, tenant_id, recipient_user_id, destination, reason, channel,
-        consent_basis, template_version, dedupe_key, max_attempts)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        consent_basis, template_version, dedupe_key, subject_type, subject_id, max_attempts)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      ON CONFLICT (tenant_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
      RETURNING ${NOTIFICATION_COLUMNS}`,
     [
@@ -233,6 +246,8 @@ export async function enqueueNotification(
       decision.basis,
       input.templateVersion,
       input.dedupeKey ?? null,
+      input.subjectType ?? null,
+      input.subjectId ?? null,
       input.maxAttempts ?? 5,
     ],
   );

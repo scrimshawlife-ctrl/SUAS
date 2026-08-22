@@ -119,6 +119,31 @@ function channelRegistry(): Map<NotificationChannel, NotificationChannelPort> {
   return createChannelRegistry(loadConfig(validEnv()));
 }
 
+describe('DATA_MODEL.md §9 / P-12 — subject reference', () => {
+  it('records the workflow subject a logical send is about', async () => {
+    const tenantId = syntheticTenantId();
+    const veteran = await user(tenantId, 'veteran');
+    const requestId = randomUUID();
+
+    const { notification } = await enqueueNotification(pool, {
+      tenantId,
+      recipientUserId: veteran.userId,
+      reason: 'qrf.responder_notified',
+      channel: 'IN_APP',
+      templateVersion: 'test@1',
+      subjectType: 'ServiceRequest',
+      subjectId: requestId,
+      disclosure: systemDisclosure(tenantId, veteran.userId),
+    });
+
+    expect(notification.subjectType).toBe('ServiceRequest');
+    expect(notification.subjectId).toBe(requestId);
+    const found = await findNotification(pool, tenantId, notification.notificationId);
+    expect(found?.subjectType).toBe('ServiceRequest');
+    expect(found?.subjectId).toBe(requestId);
+  });
+});
+
 const renderBody = () => 'Synthetic notification body.';
 
 describe('NOTIFICATIONS.md §2 — channels', () => {
