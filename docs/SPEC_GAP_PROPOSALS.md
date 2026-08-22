@@ -1,9 +1,17 @@
-# SPEC_GAP_PROPOSALS.md — DRAFT proposals for Bucket I spec gaps
+# SPEC_GAP_PROPOSALS.md — Bucket I spec gap proposals (owner-accepted; encoded as 0.1.4 patch)
 
-**Status:** `DRAFT` — **not implementation authority**
-**Released spec stack:** `0.1.3` (`RELEASE_MANIFEST-0.1.3.md`, specs merge `33c6f1925a8f8eb7ea1f52e77a102b28a249430f`)
+**Status:** `OWNER_ACCEPTED` — encoded into a proposed `SUAS-specs` **0.1.4** conformance-codification release.
+**Delivery:** `docs/spec-patches/SUAS-specs-0.1.4-conformance-codification.patch` (git `am`-applyable, 4 commits, verified to apply cleanly on `SUAS-specs@main` `33c6f19`). The Cloud Agent token is **read-only** on `scrimshawlife-ctrl/SUAS-specs`, so the patch could not be pushed as a branch/PR; the owner applies it and the merge/tag ratifies the 0.1.4 release (`SUAS-specs` lifecycle is owner-controlled).
+**Released spec stack:** `0.1.3` today → `0.1.4` once the patch is ratified (`RELEASE_MANIFEST-0.1.4.md` in the patch).
+**Implementation status:** P-12 and P-13 are already implemented, tested, and merged in this repo (PRs #32, #34). The build pin stays at `0.1.3` and MUST NOT bump to `0.1.4` until the `SUAS-specs` 0.1.4 release is actually cut (rule 1: unreleased spec is not authority).
 **Companion:** `docs/SPEC_DESIGN_GAPS.md` (gap IDs referenced below)
 **Readiness:** `NOT_READY` (unchanged)
+
+> The sections below are the source proposals. All P-1..P-23 are carried verbatim
+> in the attached 0.1.4 patch; the `**Owner confirm:**` caveats were accepted by
+> the owner ("all gap proposals accepted and authorized") and codified as the
+> implementation encodes them. The "Not proposed here" list at the end remains
+> owner-only and is explicitly **out** of the 0.1.4 patch.
 
 ## What this is, and what it is not
 
