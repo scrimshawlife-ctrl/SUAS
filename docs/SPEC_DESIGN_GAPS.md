@@ -1,15 +1,15 @@
 # SPEC_DESIGN_GAPS.md — SUAS-specs design-gap triage
 
-**Released spec stack:** `0.1.3`
-**Release manifest:** `RELEASE_MANIFEST-0.1.3.md`
-**Specs merge:** `33c6f1925a8f8eb7ea1f52e77a102b28a249430f`
+**Released spec stack:** `0.1.5`
+**Release manifest:** `RELEASE_MANIFEST-0.1.5.md`
+**Specs merge:** `e8a7d4cc4c409ff00fef115a8b3f5cec9f9b5861`
 **Stage:** `SPEC-017` implementation conformance
 **Pilot / production readiness:** `NOT_READY` (unchanged by this document)
 
 ## Purpose and governance
 
 This is a **triage catalog of design gaps in the canonical `scrimshawlife-ctrl/SUAS-specs`**
-stack `0.1.3`, surfaced while implementing SUAS. It exists to satisfy `AGENTS.md`
+stack `0.1.5`, surfaced while implementing SUAS. It exists to satisfy `AGENTS.md`
 rule 3 ("semantic gaps return to specs; do not invent product/domain behavior")
 by giving those returns a single tracked home.
 
@@ -45,11 +45,11 @@ the authoritative locus is the named spec file.
 
 ## Bucket III — Contradictions / tensions (resolve first)
 
-### G-III-1 — Hardcoded 988 / Veterans Crisis Line (draft) vs D-012 crisis copy forbidden (released) — SAFETY-CRITICAL
+### G-III-1 — Hardcoded 988 / Veterans Crisis Line (draft) vs D-012 crisis copy forbidden (released) — **RESOLVED BY D-012 (v0.1.5)**
 
-- **Refs:** draft `ISLANDS.md` §4, `SURFACES.md`, `FENCE_POSTS.md` G8 vs released `SAFETY.md` §2/§3.1/§9, `ONBOARDING.md`, `COMPLIANCE.md`; `GLOSSARY.md` "Island".
-- **Conflict:** Draft Rev 3 requires _always_ presenting specific national crisis destinations on the crisis path (including when island config is absent); released `SAFETY.md` keeps approved crisis copy `D-012 DECISION_PENDING`, forbids presenting invented crisis wording as official, and expects a placeholder/empty slot. Released `GLOSSARY.md` bridges into the draft by defining "Island" in terms of crisis numbers. `FRICTION.md` §5.3 proposes a narrow close but is explicitly **not accepted**.
-- **Impact:** An implementer following both authorities is directly contradicted on a safety surface. Needs an explicit owner decision recorded in `DECISIONS.md` (ties to **D-012**, draft **D-026**).
+- **Refs:** draft `ISLANDS.md` §4, `SURFACES.md`, `FENCE_POSTS.md` G8 vs released `SAFETY.md` §2/§3.1/§5.1/§9, `SAFETY_COPY.md`, `ONBOARDING.md`, `COMPLIANCE.md`; `GLOSSARY.md` "Island".
+- **Resolution:** D-012 is `DECIDED` in `RELEASE_DECISIONS-0.1.5.md`. Authorized destinations are 911 and the 988 Suicide & Crisis Lifeline. Implementations render `SAFETY_COPY.md` when `SUAS_SAFETY_COPY_MODE=approved` and MUST NOT invent alternative crisis wording. Draft island-specific numbers remain draft (D-026) and are not authority.
+- **Impact:** Closed as a contradiction. Remaining island/draft work is still D-026.
 
 ### G-III-2 — D-015 / D-016 `DECIDED` in the register but "open" in domain text
 
@@ -148,7 +148,7 @@ production surface is `UNAVAILABLE` / manual-only.
 | **D-009**         | Responder staffing / coverage hours                                                                                                                                        | `DECISION_PENDING`            | on-duty ops; red-state coverage; OPERATIONS gate; several dashboard metrics                                                  |
 | **D-010**         | Service funding / payment architecture                                                                                                                                     | `FUTURE` / `DECISION_PENDING` | Amadeus reservation (`BLOCKED_BY_PAYMENT_ARCHITECTURE`), Uber payment auth, `who_pays`/`funding_rails` enforcement, Medi-Cal |
 | **D-011**         | Production Support Signal scoring rules/thresholds + golden vectors                                                                                                        | `DECISION_PENDING`            | all production scoring; incomplete-input semantics; SAFETY/COORDINATION gates                                                |
-| **D-012**         | Approved production safety/crisis copy                                                                                                                                     | `DECISION_PENDING`            | veteran crisis surface; G-III-1; yellow/orange copy                                                                          |
+| **D-012**         | Approved production safety/crisis copy                                                                                                                                     | `DECIDED` (v0.1.5)            | `SAFETY_COPY.md`; 911/988; G-III-1 resolved; gated by `SUAS_SAFETY_COPY_MODE`                                                |
 | **D-013**         | Counsel review of compliance register                                                                                                                                      | `DECISION_PENDING`            | pilot gate                                                                                                                   |
 | **D-014**         | Production geocoding/maps                                                                                                                                                  | `DECISION_PENDING`            | proximity/"near you"; location basis                                                                                         |
 | **D-017**         | Production transportation adapter                                                                                                                                          | `DECIDED` (v0.1.2, Uber)      | — (implemented; payment still D-010)                                                                                         |

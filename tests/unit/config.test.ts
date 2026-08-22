@@ -31,8 +31,8 @@ describe('valid configuration', () => {
   it('accepts a released-conformant TEST configuration', () => {
     const config = loadConfig(validEnv());
     expect(config.environment).toBe('TEST');
-    expect(config.specVersion).toBe('0.1.4');
-    expect(config.releaseManifest).toBe('RELEASE_MANIFEST-0.1.4.md');
+    expect(config.specVersion).toBe('0.1.5');
+    expect(config.releaseManifest).toBe('RELEASE_MANIFEST-0.1.5.md');
     expect(config.allowRealExternalEffects).toBe(false);
     expect(config.adapters.peerSupport).toBe('manual');
     expect(config.supportSignalMode).toBe('fixture');
@@ -214,6 +214,11 @@ describe('ENVIRONMENT.md §3 — unavailable vendor surfaces stay unavailable', 
   it('rejects official safety copy and cites D-012', () => {
     const issues = issuesFor(validEnv({ SUAS_SAFETY_COPY_MODE: 'official' }));
     expect(issues.join('\n')).toContain('D-012');
+  });
+
+  it('accepts the released approved safety-copy mode', () => {
+    const config = loadConfig(validEnv({ SUAS_SAFETY_COPY_MODE: 'approved' }));
+    expect(config.safetyCopyMode).toBe('approved');
   });
 
   it('rejects enabling sensitive aggregate reporting and cites D-025', () => {

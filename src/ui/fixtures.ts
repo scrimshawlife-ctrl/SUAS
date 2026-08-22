@@ -209,8 +209,18 @@ export const VISUAL_FIXTURES: readonly VisualFixture[] = [
     }),
   ),
 
-  fixture('immediate-resources', 'IMMEDIATE_RESOURCES', '§11 reserved D-012 slot', () =>
-    renderImmediateResources(shell({ title: 'Immediate Resources' })),
+  fixture(
+    'immediate-resources',
+    'IMMEDIATE_RESOURCES',
+    '§11 reserved D-012 slot (placeholder mode)',
+    () => renderImmediateResources(shell({ title: 'Immediate Resources' })),
+  ),
+
+  fixture(
+    'immediate-resources-approved',
+    'IMMEDIATE_RESOURCES',
+    '§11 D-012 approved 911/988 copy',
+    () => renderImmediateResources(shell({ title: 'Immediate Resources' }), 'approved'),
   ),
 
   fixture('resource-categories', 'RESOURCE_CATEGORIES', '§11.6 resource category surface', () =>
@@ -357,7 +367,6 @@ export const VISUAL_FIXTURES: readonly VisualFixture[] = [
         ],
         blockingDecisions: [
           'D-011 Support Signal scoring rules and thresholds',
-          'D-012 Approved production safety/crisis copy',
           'D-017 Production transportation adapter',
         ],
         readiness: 'SPEC-017 implementation. Not authorized for pilot or production operation.',

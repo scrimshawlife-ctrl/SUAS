@@ -20,6 +20,7 @@
  */
 
 import type { ContactMethodKind, FreshnessBand } from '../fulfillment/index.js';
+import type { SafetyCopyMode } from '../config/index.js';
 import type { CategoryCard } from './categories.js';
 import type { QrfFacts } from './qrf.js';
 
@@ -67,6 +68,11 @@ export interface VeteranHomeViewModel {
   readonly categories: readonly CategoryCard[];
   /** Present when the veteran has a QRF request in flight. */
   readonly activeQrf?: QrfCardViewModel;
+  /**
+   * Safety-copy mode for the immediate-resources slot (D-012). Absent ⇒
+   * fail-closed placeholder; `approved` renders the released 911/988 copy.
+   */
+  readonly safetyCopyMode?: SafetyCopyMode;
 }
 
 export interface QrfRequestViewModel {

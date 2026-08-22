@@ -41,7 +41,14 @@ export {
   type QrfUiState,
 } from './qrf.js';
 export {
+  APPROVED_CRISIS_RESOURCES,
   assertApprovedSafetyCopyAvailable,
+  CRISIS_BANNER_COMPACT,
+  CRISIS_ENTRY_DANGER,
+  CRISIS_ENTRY_HEADING,
+  CRISIS_ENTRY_LIFELINE,
+  CRISIS_ENTRY_NOT_EMERGENCY,
+  CRISIS_FOOTER,
   D_012_APPROVED_SAFETY_COPY,
   IMMEDIATE_RESOURCE_SLOT_STATES,
   resolveImmediateResourceSlot,
@@ -50,6 +57,16 @@ export {
   type ImmediateResourceSlot,
   type ImmediateResourceSlotState,
 } from './safety.js';
+export {
+  conditionProven,
+  containsForbiddenCrisisPhrase,
+  FORBIDDEN_CRISIS_PHRASES,
+  presentTruthfulnessCondition,
+  TRUTHFULNESS_CONDITIONS,
+  type TruthfulnessCondition,
+  type TruthfulnessFacts,
+  type TruthfulnessPresentation,
+} from './truthfulness.js';
 export {
   renderActiveNeeds,
   renderAdminOverview,

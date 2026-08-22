@@ -84,9 +84,9 @@ Configuration can only further disable a feature; it cannot enable any surface t
 manifest or decision ledger marks unavailable/future (`ENVIRONMENT.md` §4;
 `config` unit tests, which name D-011, D-012, D-017–D-020, D-025 in their
 rejections). Confirmed against the released ledgers: **D-017 `DECIDED`** (v0.1.2)
-and **D-018 `DECIDED`** (v0.1.3); **D-011** (Support Signal scoring), **D-012**
-(safety/crisis copy), **D-019** (food adapter), and **D-020** (external
-peer-support adapter) remain `DECISION_PENDING`. The slice records additionally
+and **D-018 `DECIDED`** (v0.1.3); **D-012 `DECIDED`** (v0.1.5, `SAFETY_COPY.md`);
+**D-011** (Support Signal scoring), **D-019** (food adapter), and **D-020**
+(external peer-support adapter) remain `DECISION_PENDING`. The slice records additionally
 rely on still-open D-001, D-007, D-009, D-010, D-014, D-015, D-021, D-022, D-023,
 D-024, and D-025 (§5 below).
 
@@ -117,13 +117,14 @@ idempotency keys.
 
 ### 4.5 Safety and privacy
 
-No official safety/crisis copy is shipped; the veteran crisis slot renders a
-labelled placeholder (D-012 pending; `ui-surfaces`, `ui-contract` unit tests). No
-automated emergency dispatch, diagnosis, suicide prediction, or safety-critical
-generative behavior exists. Disclosure uses use-time consent evaluation and
-minimum-necessary projection (`consent`, `projection` tests). LOCAL/TEST/STAGING
-fail closed on real external effects and refuse production data resources
-(`config` tests; `ENVIRONMENT.md` §5).
+D-012 approved crisis copy is released in `SAFETY_COPY.md` (v0.1.5). The veteran
+crisis slot renders the 911/988 wording when `SUAS_SAFETY_COPY_MODE=approved` and
+a labelled placeholder otherwise (`ui-surfaces`, `ui-contract`, `truthfulness`
+tests). No automated emergency dispatch, diagnosis, suicide prediction, or
+safety-critical generative behavior exists. Disclosure uses use-time consent
+evaluation and minimum-necessary projection (`consent`, `projection` tests).
+LOCAL/TEST/STAGING fail closed on real external effects and refuse production
+data resources (`config` tests; `ENVIRONMENT.md` §5).
 
 ### 4.6 Test evidence
 
@@ -152,7 +153,8 @@ The production surface stays unavailable/manual-only, so deferral is safe.
 - **D-011** — Support Signal scoring rules/thresholds and golden vectors. The
   engine, versioning, determinism, and settlement are built and tested against a
   labelled unreleased fixture; the registry ships empty (Slice 9 items 1, 4).
-- **D-012** — approved safety/crisis copy; placeholder only (Slice 10 item 5).
+- **D-012** — **closed in v0.1.5.** Approved copy and destinations are in
+  `SAFETY_COPY.md`; implementation renders them under `SUAS_SAFETY_COPY_MODE=approved`.
 - **D-019 / D-020** — food and external peer-support adapters; manual/fake only.
 - **D-021 / D-023 / D-024** — workload envelope, performance SLOs, and recovery
   objectives; the resilience harness refuses to emit a numeric target and records

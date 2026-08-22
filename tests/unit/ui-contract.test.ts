@@ -10,11 +10,16 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
+  APPROVED_CRISIS_RESOURCES,
   assertApprovedSafetyCopyAvailable,
   CATEGORY_CARDS,
   categoryForCard,
   contactAffordances,
+  containsForbiddenCrisisPhrase,
+  CRISIS_ENTRY_HEADING,
+  CRISIS_ENTRY_NOT_EMERGENCY,
   D_012_APPROVED_SAFETY_COPY,
+  FORBIDDEN_CRISIS_PHRASES,
   NonOperationalCategoryError,
   presentQrfState,
   REQUIRED_FIXTURE_COVERAGE,
@@ -198,37 +203,70 @@ describe('MVP_REFERENCE.md §7.2 — QRF truthfulness', () => {
   });
 });
 
-describe('SAFETY.md §2 and §9 — the reserved crisis copy slot', () => {
-  it('records D-012 as still pending', () => {
-    expect(D_012_APPROVED_SAFETY_COPY).toBe('DECISION_PENDING');
+describe('SAFETY.md §2 / SAFETY_COPY.md — D-012 approved crisis copy', () => {
+  it('records D-012 as decided', () => {
+    expect(D_012_APPROVED_SAFETY_COPY).toBe('DECIDED');
   });
 
-  it('renders a placeholder rather than approved copy', () => {
-    const slot = resolveImmediateResourceSlot();
-    expect(slot.state).toBe('PLACEHOLDER');
-    expect(slot.resources).toEqual([]);
-    expect(slot.placeholder).toBeDefined();
+  it('renders a placeholder by default and in every non-approved mode', () => {
+    for (const mode of ['placeholder_test_only', 'disabled'] as const) {
+      const slot = resolveImmediateResourceSlot(mode);
+      expect(slot.state, mode).toBe('PLACEHOLDER');
+      expect(slot.resources, mode).toEqual([]);
+      expect(slot.placeholder, mode).toBeDefined();
+    }
+    expect(resolveImmediateResourceSlot().state).toBe('PLACEHOLDER');
   });
 
-  it('refuses to present safety copy as official while D-012 is open', () => {
+  it('refuses to present safety copy as official unless the mode is approved', () => {
     expect(() => assertApprovedSafetyCopyAvailable('A red check-in outcome')).toThrow(
       UnapprovedSafetyCopyError,
     );
+    expect(() => assertApprovedSafetyCopyAvailable('A red check-in outcome', 'disabled')).toThrow(
+      UnapprovedSafetyCopyError,
+    );
+    expect(() =>
+      assertApprovedSafetyCopyAvailable('A red check-in outcome', 'approved'),
+    ).not.toThrow();
   });
 
-  it('ships no crisis destination or hotline in the safety module', () => {
-    // A well-known number shipped without D-012 is exactly the unapproved
-    // official-looking copy SAFETY.md §2 forbids.
+  it('renders the released 911/988 destinations only in approved mode', () => {
+    const slot = resolveImmediateResourceSlot('approved');
+    expect(slot.state).toBe('APPROVED');
+    expect(slot.resources).toEqual(APPROVED_CRISIS_RESOURCES);
+    expect(slot.resources.map((resource) => resource.destination)).toEqual(['tel:911', 'tel:988']);
+    expect(slot.resources.map((resource) => resource.label)).toEqual([
+      'Call 911',
+      'Call or text 988',
+    ]);
+  });
+
+  it('authorizes no destination other than 911 and 988', () => {
     const source = readFileSync(new URL('../../src/ui/safety.ts', import.meta.url), 'utf8');
-    expect(source).not.toMatch(/\b988\b/);
     expect(source).not.toMatch(/\b1-?800-?\d{3}-?\d{4}\b/);
     expect(source).not.toMatch(/https?:\/\//);
+    expect(APPROVED_CRISIS_RESOURCES.map((resource) => resource.destination)).toEqual([
+      'tel:911',
+      'tel:988',
+    ]);
   });
 
-  it('states unavailability without giving crisis guidance', () => {
+  it('states placeholder unavailability without giving crisis guidance', () => {
     const placeholder = resolveImmediateResourceSlot().placeholder ?? '';
     for (const forbidden of ['call', 'text', 'emergency', 'suicide', 'crisis line']) {
       expect(placeholder.toLowerCase(), forbidden).not.toContain(forbidden);
+    }
+  });
+
+  it('keeps the approved copy free of SAFETY_COPY.md §4 forbidden phrases', () => {
+    const approved = [
+      CRISIS_ENTRY_HEADING,
+      CRISIS_ENTRY_NOT_EMERGENCY,
+      ...APPROVED_CRISIS_RESOURCES.map((resource) => resource.label),
+    ].join('\n');
+    expect(containsForbiddenCrisisPhrase(approved)).toBeUndefined();
+    for (const phrase of FORBIDDEN_CRISIS_PHRASES) {
+      expect(approved.toLowerCase(), phrase).not.toContain(phrase.toLowerCase());
     }
   });
 });

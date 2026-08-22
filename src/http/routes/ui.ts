@@ -19,6 +19,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { assertMfaElevated, assertSuasAdmin } from '../../authz/index.js';
+import type { SafetyCopyMode } from '../../config/index.js';
 import { readCaseQueue } from '../../coordination/index.js';
 import { searchResources } from '../../fulfillment/index.js';
 import { D_012_APPROVED_SAFETY_COPY } from '../../ui/safety.js';
@@ -45,6 +46,8 @@ import { authenticate } from '../authenticate.js';
 export interface UiRouteDependencies {
   readonly pool: Pool;
   readonly sessionSecret: string | undefined;
+  /** D-012 safety-copy mode; controls the immediate-resources slot. */
+  readonly safetyCopyMode: SafetyCopyMode;
 }
 
 const HTML = 'text/html; charset=utf-8';
@@ -59,7 +62,7 @@ function shell(title: string, overrides: Partial<ShellViewModel> = {}): ShellVie
 }
 
 export function registerUiRoutes(app: FastifyInstance, deps: UiRouteDependencies): void {
-  const { pool, sessionSecret } = deps;
+  const { pool, sessionSecret, safetyCopyMode } = deps;
 
   // --- Public surfaces -------------------------------------------------------
   // §5 lists these as public: a veteran must be able to see the action surface
@@ -96,6 +99,7 @@ export function registerUiRoutes(app: FastifyInstance, deps: UiRouteDependencies
       renderVeteranHome({
         shell: shell('Support', { currentNav: 'HOME' }),
         categories: CATEGORY_CARDS,
+        safetyCopyMode,
         ...(active === undefined
           ? {}
           : {
@@ -114,7 +118,9 @@ export function registerUiRoutes(app: FastifyInstance, deps: UiRouteDependencies
 
   app.get('/app/immediate-resources', async (request, reply) => {
     await authenticate(pool, sessionSecret, request);
-    await reply.type(HTML).send(renderImmediateResources(shell('Immediate Resources')));
+    await reply
+      .type(HTML)
+      .send(renderImmediateResources(shell('Immediate Resources'), safetyCopyMode));
   });
 
   app.get('/app/resources', async (request, reply) => {
@@ -283,13 +289,15 @@ export function registerUiRoutes(app: FastifyInstance, deps: UiRouteDependencies
           { name: 'Support signal scoring', presence: 'MISSING', note: 'D-011 pending' },
           {
             name: 'Approved safety copy',
-            presence: 'MISSING',
-            note: `D-012 ${D_012_APPROVED_SAFETY_COPY}`,
+            presence: safetyCopyMode === 'approved' ? 'CONFIGURED' : 'MISSING',
+            note:
+              safetyCopyMode === 'approved'
+                ? `D-012 ${D_012_APPROVED_SAFETY_COPY}; SUAS_SAFETY_COPY_MODE=approved`
+                : `D-012 ${D_012_APPROVED_SAFETY_COPY}; SUAS_SAFETY_COPY_MODE=${safetyCopyMode}`,
           },
         ],
         blockingDecisions: [
           'D-011 Support Signal scoring rules and thresholds',
-          'D-012 Approved production safety/crisis copy',
           'D-017 to D-020 production provider adapters',
         ],
         readiness: 'SPEC-017 implementation. Not authorized for pilot or production operation.',

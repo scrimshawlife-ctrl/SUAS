@@ -117,7 +117,7 @@ export const REQUIRED_SURFACES: readonly SurfaceRequirement[] = [
     conformance: 'MUST_MATCH',
     audience: 'VETERAN',
     requiredElements: ['Immediate Resources'],
-    divergences: ['§7.3 crisis/immediate-resource copy (D-012)'],
+    divergences: ['§7.3 crisis/immediate-resource copy (D-012 approved wording)'],
   },
   {
     id: 'RESOURCE_CATEGORIES',
