@@ -51,20 +51,23 @@ the authoritative locus is the named spec file.
 - **Resolution:** D-012 is `DECIDED` in `RELEASE_DECISIONS-0.1.5.md`. Authorized destinations are 911 and the 988 Suicide & Crisis Lifeline. Implementations render `SAFETY_COPY.md` when `SUAS_SAFETY_COPY_MODE=approved` and MUST NOT invent alternative crisis wording. Draft island-specific numbers remain draft (D-026) and are not authority.
 - **Impact:** Closed as a contradiction. Remaining island/draft work is still D-026.
 
-### G-III-2 — D-015 / D-016 `DECIDED` in the register but "open" in domain text
+### G-III-2 — D-015 / D-016 `DECIDED` in the register but "open" in domain text — **PENDING 0.1.6**
 
-- **Refs:** `DECISIONS.md` D-015/D-016 (`DECIDED`) vs `CASES.md`, `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md` (still "open" / `INFERRED`).
-- **Impact:** Implementers cannot tell whether veteran Case-Note visibility (D-015) and enrollment proofing (D-016) are settled defaults or still open.
+- **Refs:** `DECISIONS.md` D-015/D-016 (`DECIDED`) vs prior `CASES.md` / `PRODUCT.md` / `ONBOARDING.md` / `PILOT.md` / `PRIVACY.md` / `GLOSSARY.md` "open" / `INFERRED` wording.
+- **Draft close:** `SUAS-specs` branch `cursor/spec-0.1.6-wave-a-hygiene-1036` (`RELEASE_MANIFEST-0.1.6.md`) rewrites those files to the v0.1 decided defaults. **Not authority until the specs PR is owner-merged.** Do not re-pin this repo yet.
+- **Impact:** After merge, implementers reading domain files will see the same D-015/D-016 defaults as `DECISIONS.md`.
 
-### G-III-3 — SPEC acceptance references an undefined target (effective Support Signal projection)
+### G-III-3 — SPEC acceptance references an undefined target (effective Support Signal projection) — **PENDING 0.1.6**
 
-- **Refs:** SPEC-003 accepts "effective projection as defined in SPEC-006"; SPEC-006 / `DATA_MODEL.md` / `CASES.md` do not define the selection rule; `SUPPORT_SIGNALS.md` §7 defers it.
-- **Impact:** An accepted decision points at a rule that no released file specifies (see G-I-24).
+- **Refs:** SPEC-003 historically accepted "effective projection as defined in SPEC-006"; `SUPPORT_SIGNALS.md` §7 left a two-override owner-confirm follow-up.
+- **Draft close:** 0.1.6 points SPEC-003 at `SUPPORT_SIGNALS.md` §7.1 / `DATA_MODEL.md` §4 and transcribes the already-implemented two-override / chain rule (named target excluded; remaining candidates by `computed_at DESC`, `support_signal_id DESC`). **Not authority until the specs PR is owner-merged.**
+- **Impact:** After merge, the accepted projection pointer matches the 0.1.4 selection rule (see G-I-24 / P-21).
 
-### G-III-4 — Released manifest/acceptance vs per-file `draft` headers (authority meta-gap)
+### G-III-4 — Released manifest/acceptance vs per-file `draft` headers (authority meta-gap) — **PARTIAL / PENDING 0.1.6**
 
 - **Refs:** `RELEASE_MANIFEST-0.1.3.md` + SPEC-010/011/013/014 acceptance vs `draft` / `dependency-blocked` headers still on `DOMAIN_MODEL.md`, `DATA_MODEL.md`, `EVENT_MODEL.md`, `CASES.md`, `DISPATCH.md`, `FULFILLMENT.md`, `RESILIENCE.md`, `OPERATIONS.md`, `PRODUCT.md`, `GLOSSARY.md`, and others; SPEC acceptance records still pinned to stack `0.1.0`.
-- **Impact:** "Which text is binding" cannot be answered from a file's own header; every read must re-derive authority from the manifest. Pervasive; low-effort to fix.
+- **Draft close (high-traffic leftover):** 0.1.6 stamps Authority lines on `CASES.md`, `AUTH.md`, `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md`, `GLOSSARY.md`, `SUPPORT_SIGNALS.md`, and `DATA_MODEL.md` (inline `draft` remains for provenance; manifest wins per `VERSIONING.md` §1). Remaining files still rely on the P-1 manifest-override rule. **Not authority until the specs PR is owner-merged.**
+- **Impact:** After merge, the files implementers open first no longer contradict the manifest. Other stale headers remain covered by P-1.
 
 ---
 
@@ -187,6 +190,8 @@ break-glass/dual-control (`AUTH.md` §7), abandoned Check-In idle timeout
 
 ## Cross-references
 
+- Close sequence for remaining gaps: `docs/SPEC_GAP_PLAN.md`.
+- Wave A draft: `SUAS-specs` `0.1.6` at https://github.com/scrimshawlife-ctrl/suas-specs/pull/9 (not authority until owner merge; do not re-pin).
 - Per-slice returned-gap detail: `docs/slices/SLICE_01_FOUNDATION.md` … `docs/slices/SLICE_11_RESILIENCE_HARNESS.md` (each `## 10` section).
 - Built-implementation conformance snapshot: `docs/SPEC017_COMPLETION_AUDIT.md`.
 - Runtime spec pins this triage is filed against: `src/release/pins.ts`.
