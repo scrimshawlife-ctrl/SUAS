@@ -1,6 +1,6 @@
 # SPEC017_PLAN.md — Implementation conformance plan for SUAS v0.1.1
 
-**Released spec:** `0.1.1`  
+**Released spec:** `0.1.3` (plan opened against `0.1.1`; the runtime now pins `0.1.3` — `src/release/pins.ts`, `RELEASE_MANIFEST-0.1.3.md`)  
 **Status:** `IN_PROGRESS`  
 **Implementation repository:** `scrimshawlife-ctrl/SUAS`  
 **Canonical specs:** `scrimshawlife-ctrl/SUAS-specs`
@@ -25,17 +25,25 @@ Slices 1-11 each returned semantic/mechanism questions to specs; see the gaps se
 of each record. Each slice has closed the seam the previous one left, except one.
 No readiness gate has advanced, and production remains blocked until SPEC-018.
 
-**Two unclosed gaps are now load-bearing.** D-011 blocks all Support Signal
-scoring the same way: the engine contract, versioning, determinism, and settlement
-are built and tested against a labelled unreleased fixture, and the registry ships
-empty (Slice 9 §10 item 1).
-v0.1.1 releases no per-capability
-provider disclosure projection (Slice 4 §10 item 1, Slice 7 §10 item 1). Manual
-coordination — which the release makes first-class — works end to end. Every
-externally-transmitting adapter path fails closed, proven by test. The router,
-adapters, consent gate, and projection mechanism are built and exercised against a
-test-only contract, so releasing the four capability contracts is the only remaining
-work for API-backed fulfillment.
+**The load-bearing gap is now D-011.** It blocks all Support Signal scoring: the
+engine contract, versioning, determinism, and settlement are built and tested
+against a labelled unreleased fixture, and the registry ships empty (Slice 9 §10
+item 1). D-012 (approved safety/crisis copy) likewise stays `DECISION_PENDING`, so
+the veteran-facing crisis slot renders a labelled placeholder only.
+
+Per-capability provider disclosure is no longer globally absent. v0.1.2 closed
+D-017 (Uber selected behind `TransportationPort`) and v0.1.3 closed D-018 (Amadeus
+selected behind `TemporaryShelterPort`); both ship as adapter-local realizations
+with released field-level disclosure projections, deterministic ranking, provider
+health/fallback, and SUAS-side idempotency, and both keep their manual adapters
+mandatory (`RELEASE_DECISIONS-0.1.2.md`, `RELEASE_DECISIONS-0.1.3.md`). Amadeus
+reservation remains `BLOCKED_BY_PAYMENT_ARCHITECTURE`. D-019 (food) and D-020
+(external peer support) stay `DECISION_PENDING`, so those capabilities remain
+manual/fake only.
+
+Manual coordination — which the release makes first-class — works end to end, and
+every real-external-effect path still fails closed until SPEC-018, proven by test.
+No readiness gate has advanced, and production remains blocked until SPEC-018.
 
 ## Objective
 
