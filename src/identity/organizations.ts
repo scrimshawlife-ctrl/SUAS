@@ -23,6 +23,38 @@ export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
 export const MEMBERSHIP_STATUSES = ['INVITED', 'ACTIVE', 'SUSPENDED', 'REVOKED'] as const;
 export type MembershipStatus = (typeof MEMBERSHIP_STATUSES)[number];
 
+/**
+ * Terminal lifecycle end-states (DOMAIN_MODEL.md §2). A relationship past either
+ * is over and must not be reactivated: an `ARCHIVED` Organization or a `REVOKED`
+ * membership never returns to `ACTIVE`, because that would silently restore
+ * authority (AUTH.md §6 requires an active membership/organization to act).
+ */
+export class OrganizationTerminalError extends Error {
+  readonly code = 'UNPROCESSABLE';
+  readonly httpStatus = 422;
+
+  constructor() {
+    super(
+      'An ARCHIVED Organization is terminal and cannot change status ' +
+        '(SUAS-specs DOMAIN_MODEL.md §2).',
+    );
+    this.name = 'OrganizationTerminalError';
+  }
+}
+
+export class MembershipTerminalError extends Error {
+  readonly code = 'UNPROCESSABLE';
+  readonly httpStatus = 422;
+
+  constructor() {
+    super(
+      'A REVOKED membership is terminal and cannot change status; org actions require an ' +
+        'active membership (SUAS-specs DOMAIN_MODEL.md §2; AUTH.md §6).',
+    );
+    this.name = 'MembershipTerminalError';
+  }
+}
+
 export interface Organization {
   readonly organizationId: string;
   readonly tenantId: string;
@@ -114,12 +146,17 @@ export async function setOrganizationStatus(
 ): Promise<Organization | undefined> {
   const result = await db.query<OrganizationRow>(
     `UPDATE organizations SET status = $3, updated_at = now()
-     WHERE tenant_id = $1 AND organization_id = $2
+     WHERE tenant_id = $1 AND organization_id = $2 AND status <> 'ARCHIVED'
      RETURNING ${ORG_COLUMNS}`,
     [tenantId, organizationId, status],
   );
   const row = result.rows[0];
-  return row === undefined ? undefined : toOrganization(row);
+  if (row === undefined) {
+    const existing = await findOrganization(db, tenantId, organizationId);
+    if (existing?.status === 'ARCHIVED') throw new OrganizationTerminalError();
+    return undefined;
+  }
+  return toOrganization(row);
 }
 
 /**
@@ -169,12 +206,20 @@ export async function setMembershipStatus(
        SET status = $3::suas_membership_status,
            revoked_at = CASE WHEN $3::text = 'REVOKED' THEN now() ELSE revoked_at END,
            updated_at = now()
-     WHERE tenant_id = $1 AND membership_id = $2
+     WHERE tenant_id = $1 AND membership_id = $2 AND status <> 'REVOKED'
      RETURNING ${MEMBERSHIP_COLUMNS}`,
     [tenantId, membershipId, status],
   );
   const row = result.rows[0];
-  return row === undefined ? undefined : toMembership(row);
+  if (row === undefined) {
+    const existing = await db.query<{ status: MembershipStatus }>(
+      `SELECT status FROM organization_memberships WHERE tenant_id = $1 AND membership_id = $2`,
+      [tenantId, membershipId],
+    );
+    if (existing.rows[0]?.status === 'REVOKED') throw new MembershipTerminalError();
+    return undefined;
+  }
+  return toMembership(row);
 }
 
 export async function setMembershipRole(
