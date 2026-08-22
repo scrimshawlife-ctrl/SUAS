@@ -16,17 +16,17 @@ It does **not** invent scoring, crisis copy, legal status, vendor, capacity, SLO
 
 ## 0. Current state
 
-| Layer | State |
-| --- | --- |
+| Layer                      | State                                                          |
+| -------------------------- | -------------------------------------------------------------- |
 | Implementation slices 1–11 | Built; SPEC-017 evidence in `docs/SPEC017_COMPLETION_AUDIT.md` |
-| Codified Bucket I | P-1..P-23 in specs 0.1.4; P-12/P-13 implemented in this repo |
-| Safety copy | D-012 `DECIDED`; UI gated by `SUAS_SAFETY_COPY_MODE` |
-| Production scoring | D-011 `DECISION_PENDING`; engine registry empty |
-| Pilot / production | Blocked on SPEC-018 + remaining Bucket II |
+| Codified Bucket I          | P-1..P-23 in specs 0.1.4; P-12/P-13 implemented in this repo   |
+| Safety copy                | D-012 `DECIDED`; UI gated by `SUAS_SAFETY_COPY_MODE`           |
+| Production scoring         | D-011 `DECISION_PENDING`; engine registry empty                |
+| Pilot / production         | Blocked on SPEC-018 + remaining Bucket II                      |
 
 **Close shape** (repeat for every wave that needs a spec release):
 
-1. Owner accepts the values or editorial text (this plan names *what* must be decided, not *which* value).
+1. Owner accepts the values or editorial text (this plan names _what_ must be decided, not _which_ value).
 2. Canonical patch in `SUAS-specs`: artifact + `RELEASE_DECISIONS-0.1.x.md` (if a D-0xx) + `RELEASE_MANIFEST-0.1.x.md` + `DECISIONS.md` / `CHANGELOG.md` / lineage.
 3. Owner merges the specs PR (lifecycle is owner-controlled).
 4. Implementation re-pins and implements only what that release authorized.
@@ -37,47 +37,47 @@ It does **not** invent scoring, crisis copy, legal status, vendor, capacity, SLO
 
 ### 1.1 Bucket I ratified as 0.1.4 (P-1..P-23)
 
-| Proposal | Gap | Outcome |
-| --- | --- | --- |
-| P-1 | G-III-4 (partial) | Manifest overrides stale `draft` headers |
-| P-2 | G-I-3 | Follow-Up counter = `coordination_attempt_count` |
-| P-3 | G-I-39 | Version-identity table + schema-version mechanism |
-| P-4 | G-I-1 | Category ↔ capability ↔ port map |
-| P-5 | G-I-2 | Mode-concept relationship |
-| P-6 | G-I-5 | Mandatory manual adapter + registry |
-| P-7 | G-I-9, G-I-10 | Closed cancel/expiry/escalation sets |
-| P-8 | G-I-13 | Blocking Service Request = any non-terminal |
-| P-9 | G-I-14 | `ACTIVATE` command |
-| P-10 | G-I-11 | `RESCHEDULED` → `SCHEDULED` |
-| P-11 | G-I-12 | Reopen `CLOSED` → `OPEN` |
-| P-12 | G-I-16 | Notification `subject_type` / `subject_id` |
-| P-13 | G-I-17 | `contact_method_kind` / typed destination |
-| P-14 | G-I-18 | Follow-Up `responsible_type` + `referral_id` |
-| P-15 | G-I-36 | `suas_admin_grants` |
-| P-16 | G-I-21, G-I-22 | Current-assignment projection + reconciliation / cardinality |
-| P-17 | G-I-23 | System-basis registry |
-| P-18 | G-I-25 | `grantee_id` typing |
-| P-19 | G-I-27 | Permission/scope pairing |
-| P-20 | G-I-26 | Purpose recorded, not compared |
-| P-21 | G-I-24 | Effective-signal selection (not scoring) |
-| P-22 | G-I-28 *field only* | `priority_signal_level` on the Case |
-| P-23 | G-I-29 | QRF label → fact table |
+| Proposal | Gap                 | Outcome                                                      |
+| -------- | ------------------- | ------------------------------------------------------------ |
+| P-1      | G-III-4 (partial)   | Manifest overrides stale `draft` headers                     |
+| P-2      | G-I-3               | Follow-Up counter = `coordination_attempt_count`             |
+| P-3      | G-I-39              | Version-identity table + schema-version mechanism            |
+| P-4      | G-I-1               | Category ↔ capability ↔ port map                             |
+| P-5      | G-I-2               | Mode-concept relationship                                    |
+| P-6      | G-I-5               | Mandatory manual adapter + registry                          |
+| P-7      | G-I-9, G-I-10       | Closed cancel/expiry/escalation sets                         |
+| P-8      | G-I-13              | Blocking Service Request = any non-terminal                  |
+| P-9      | G-I-14              | `ACTIVATE` command                                           |
+| P-10     | G-I-11              | `RESCHEDULED` → `SCHEDULED`                                  |
+| P-11     | G-I-12              | Reopen `CLOSED` → `OPEN`                                     |
+| P-12     | G-I-16              | Notification `subject_type` / `subject_id`                   |
+| P-13     | G-I-17              | `contact_method_kind` / typed destination                    |
+| P-14     | G-I-18              | Follow-Up `responsible_type` + `referral_id`                 |
+| P-15     | G-I-36              | `suas_admin_grants`                                          |
+| P-16     | G-I-21, G-I-22      | Current-assignment projection + reconciliation / cardinality |
+| P-17     | G-I-23              | System-basis registry                                        |
+| P-18     | G-I-25              | `grantee_id` typing                                          |
+| P-19     | G-I-27              | Permission/scope pairing                                     |
+| P-20     | G-I-26              | Purpose recorded, not compared                               |
+| P-21     | G-I-24              | Effective-signal selection (not scoring)                     |
+| P-22     | G-I-28 _field only_ | `priority_signal_level` on the Case                          |
+| P-23     | G-I-29              | QRF label → fact table                                       |
 
 ### 1.2 Owner decisions already closed
 
-| ID | Release | What closed | What did *not* close |
-| --- | --- | --- | --- |
-| D-012 | 0.1.5 | Crisis copy + 911/988 + 5-state truthfulness | Production operation |
-| D-017 | 0.1.2 | Uber as first transportation adapter | Payment / SPEC-018 |
-| D-018 | 0.1.3 | Amadeus as first shelter search adapter | Reservation (D-010) / SPEC-018 |
-| D-015 | 0.1.0 | Full Case Notes are not veteran-visible | Domain-file wording (Wave A) |
-| D-016 | 0.1.0 | No VA/DD-214/in-person proofing for MVP | Domain-file wording (Wave A) |
+| ID    | Release | What closed                                  | What did _not_ close           |
+| ----- | ------- | -------------------------------------------- | ------------------------------ |
+| D-012 | 0.1.5   | Crisis copy + 911/988 + 5-state truthfulness | Production operation           |
+| D-017 | 0.1.2   | Uber as first transportation adapter         | Payment / SPEC-018             |
+| D-018 | 0.1.3   | Amadeus as first shelter search adapter      | Reservation (D-010) / SPEC-018 |
+| D-015 | 0.1.0   | Full Case Notes are not veteran-visible      | Domain-file wording (Wave A)   |
+| D-016 | 0.1.0   | No VA/DD-214/in-person proofing for MVP      | Domain-file wording (Wave A)   |
 
 ---
 
 ## 2. Remaining work, in waves
 
-Waves are sequential for *authority* (later waves may start in parallel once their inputs exist). Do not skip Wave B if the goal is live Check-In → Case.
+Waves are sequential for _authority_ (later waves may start in parallel once their inputs exist). Do not skip Wave B if the goal is live Check-In → Case.
 
 ```text
 Wave A  hygiene (no new product value)
@@ -101,12 +101,12 @@ Wave F  draft Rev 3 (islands)           ← defer
 
 **Drafted** on `SUAS-specs` `cursor/spec-0.1.6-wave-a-hygiene-1036` as `RELEASE_MANIFEST-0.1.6.md` ([specs PR #9](https://github.com/scrimshawlife-ctrl/suas-specs/pull/9)). Lifecycle is owner-controlled: **do not re-pin** `src/release/pins.ts` until that specs PR is merged. G-I-4 is **not** in the draft (no `ServiceOffer`/`ProviderOffer` join exists in this repo to transcribe).
 
-| ID | Close | Spec files | Owner input needed? |
-| --- | --- | --- | --- |
-| **G-III-2** | Replace “D-015/D-016 open / `INFERRED`” prose with the 0.1.0 decided defaults | `CASES.md` §8.1 (still titled “D-015 open”); `AUTH.md` (D-016 `INFERRED`); `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md` if they still say open | **No.** Values are already in `DECISIONS.md` / `RELEASE_DECISIONS-0.1.0.md`. |
-| **G-III-3** | Point SPEC-003 / leftover “undefined projection” text at the 0.1.4 selection rule | `SPEC-003.md`, any leftover deferral in `SUPPORT_SIGNALS.md` §7 | **Confirm only:** two overrides targeting the same signal (P-21 caveat). If unstated, keep current impl (override supersedes its target; newest `computed_at` wins). |
-| **G-III-4 leftover** | Per-file headers still say `draft` / `0.1.0` (e.g. `CASES.md`, `SUPPORT_SIGNALS.md`) even though P-1 made the manifest win | Same files P-1 listed | **No.** Either stamp `released via RELEASE_MANIFEST-0.1.5.md` or leave the P-1 override sentence and add a one-line “stale header is not authority” on each high-traffic file. |
-| **G-I-4** | `ServiceOffer` (catalog) vs `ProviderOffer` (live) join/supersession | `DOMAIN_MODEL.md`, `PROVIDER_INTEGRATIONS.md` §6, `DISPATCH.md` §5 | **Only if** no current impl rule can be transcribed. First pass: document whatever the router already does; do not invent a new offer lifecycle. |
+| ID                   | Close                                                                                                                      | Spec files                                                                                                                                                | Owner input needed?                                                                                                                                                            |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **G-III-2**          | Replace “D-015/D-016 open / `INFERRED`” prose with the 0.1.0 decided defaults                                              | `CASES.md` §8.1 (still titled “D-015 open”); `AUTH.md` (D-016 `INFERRED`); `PRODUCT.md`, `ONBOARDING.md`, `PILOT.md`, `PRIVACY.md` if they still say open | **No.** Values are already in `DECISIONS.md` / `RELEASE_DECISIONS-0.1.0.md`.                                                                                                   |
+| **G-III-3**          | Point SPEC-003 / leftover “undefined projection” text at the 0.1.4 selection rule                                          | `SPEC-003.md`, any leftover deferral in `SUPPORT_SIGNALS.md` §7                                                                                           | **Confirm only:** two overrides targeting the same signal (P-21 caveat). If unstated, keep current impl (override supersedes its target; newest `computed_at` wins).           |
+| **G-III-4 leftover** | Per-file headers still say `draft` / `0.1.0` (e.g. `CASES.md`, `SUPPORT_SIGNALS.md`) even though P-1 made the manifest win | Same files P-1 listed                                                                                                                                     | **No.** Either stamp `released via RELEASE_MANIFEST-0.1.5.md` or leave the P-1 override sentence and add a one-line “stale header is not authority” on each high-traffic file. |
+| **G-I-4**            | `ServiceOffer` (catalog) vs `ProviderOffer` (live) join/supersession                                                       | `DOMAIN_MODEL.md`, `PROVIDER_INTEGRATIONS.md` §6, `DISPATCH.md` §5                                                                                        | **Only if** no current impl rule can be transcribed. First pass: document whatever the router already does; do not invent a new offer lifecycle.                               |
 
 **Exit:** An implementer reading `CASES.md` / `AUTH.md` / `SUPPORT_SIGNALS.md` does not see a contradiction with `DECISIONS.md`.
 
@@ -120,21 +120,21 @@ Wave F  draft Rev 3 (islands)           ← defer
 
 **Owner must supply all of the following** (see prior D-011 brief). A close that omits any row is not implementable:
 
-| # | Decide | Released home | Bound |
-| --- | --- | --- | --- |
-| B1 | Questionnaire content: questions, closed options, required flags, option weights for `sleep`, `connection`, `stress`, `basic_needs`, `coping`, `safety` | New artifact (e.g. `SIGNAL_SCORING.md` or a published `QuestionnaireVersion` record) | `CHECKINS.md` §3 — no invented clinical instrument / psychometric claim |
-| B2 | Deterministic scoring: canonical answers + `signal_version` + questionnaire version → `level` + inspectable `basis` | Same artifact | `SUPPORT_SIGNALS.md` §2 — no generative primary signal |
-| B3 | Incomplete-input rule: refuse (today) **or** a deterministic missing-input function | Same artifact + `CHECKINS.md` §4.1 | Until closed, production compute from `INCOMPLETE` stays forbidden |
-| B4 | Golden vectors: fixed inputs → expected `level` + `basis` for that version | `TESTING.md` §3.1 / §12 | Stay `UNRELEASED_FIXTURE` until this table is released |
-| B5 | Immutable `signal_version` id (+ matching questionnaire version) | `VERSIONING.md` runtime-content identities; admin publish path | New version writes new rows; never mutates history |
+| #   | Decide                                                                                                                                                  | Released home                                                                        | Bound                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| B1  | Questionnaire content: questions, closed options, required flags, option weights for `sleep`, `connection`, `stress`, `basic_needs`, `coping`, `safety` | New artifact (e.g. `SIGNAL_SCORING.md` or a published `QuestionnaireVersion` record) | `CHECKINS.md` §3 — no invented clinical instrument / psychometric claim |
+| B2  | Deterministic scoring: canonical answers + `signal_version` + questionnaire version → `level` + inspectable `basis`                                     | Same artifact                                                                        | `SUPPORT_SIGNALS.md` §2 — no generative primary signal                  |
+| B3  | Incomplete-input rule: refuse (today) **or** a deterministic missing-input function                                                                     | Same artifact + `CHECKINS.md` §4.1                                                   | Until closed, production compute from `INCOMPLETE` stays forbidden      |
+| B4  | Golden vectors: fixed inputs → expected `level` + `basis` for that version                                                                              | `TESTING.md` §3.1 / §12                                                              | Stay `UNRELEASED_FIXTURE` until this table is released                  |
+| B5  | Immutable `signal_version` id (+ matching questionnaire version)                                                                                        | `VERSIONING.md` runtime-content identities; admin publish path                       | New version writes new rows; never mutates history                      |
 
 **Also decide with D-011 or immediately after (depends on scores existing):**
 
-| ID | Why it rides with D-011 |
-| --- | --- |
+| ID                | Why it rides with D-011                                                                                                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **G-I-28 action** | `SAFETY.md` §3.2 says `RED` must open/update a Support Case. P-22 modeled `priority_signal_level` but **not** the command that writes it. Need: command name, idempotency identity, which levels open vs update, what happens if a case is already `CLOSED`. |
 
-**Not D-011:** effective-signal *selection* (P-21), abandoned Check-In idle timeout (`CHECKINS.md` §4.2), island/crisis numbers (D-026).
+**Not D-011:** effective-signal _selection_ (P-21), abandoned Check-In idle timeout (`CHECKINS.md` §4.2), island/crisis numbers (D-026).
 
 **Close shape:** `RELEASE_DECISIONS-0.1.x.md` + scoring artifact + golden vectors + `DECISIONS.md` D-011 → `DECIDED`. Then implementation registers one `released: true` engine and keeps TEST default on fixture unless the owner also authorizes `approved`-style env for scoring.
 
@@ -150,41 +150,41 @@ Do **C1** before more fulfillment-adapter work. Do **C2** before claiming event-
 
 #### C1 — Fulfillment outcomes (correctness-critical)
 
-| ID | Decision the owner must make | Why it cannot be inferred |
-| --- | --- | --- |
+| ID        | Decision the owner must make                                                                                                   | Why it cannot be inferred                                     |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
 | **G-I-6** | Who may declare `ServiceFulfillment.PARTIAL`, on what evidence, and whether a request may become `FULFILLED` from partial work | Dispatch currently wants `COMPLETED` evidence for `FULFILLED` |
-| **G-I-7** | Full `DISPUTED` table: legal source states, who may dispute, exits besides “never back to `CONFIRMED`” (already implemented) | Only the dispute *edge* is specified |
-| **G-I-8** | Deterministic map: fulfillment `FAILED` → request `UNFULFILLABLE` **or** remain actionable (and when) | Spec today is a disjunction |
+| **G-I-7** | Full `DISPUTED` table: legal source states, who may dispute, exits besides “never back to `CONFIRMED`” (already implemented)   | Only the dispute _edge_ is specified                          |
+| **G-I-8** | Deterministic map: fulfillment `FAILED` → request `UNFULFILLABLE` **or** remain actionable (and when)                          | Spec today is a disjunction                                   |
 
 #### C2 — Events and settlement shape
 
-| ID | Decision |
-| --- | --- |
+| ID         | Decision                                                                                                                                                                                                   |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **G-I-15** | Which currently audit-only Service Request transitions become Domain Events (`SERVICE_FAILED` emit conditions + the un-evented submit/triage/match/start/confirm/close/cancel/decline/expire/escalate set) |
-| **G-I-19** | Settlement summary: structured references vs free text (field list) |
-| **G-I-20** | Per-category “required details” on Service Request submit (`FOOD` / `TRANSPORTATION` / `SHELTER` / `PEER_SUPPORT`) |
+| **G-I-19** | Settlement summary: structured references vs free text (field list)                                                                                                                                        |
+| **G-I-20** | Per-category “required details” on Service Request submit (`FOOD` / `TRANSPORTATION` / `SHELTER` / `PEER_SUPPORT`)                                                                                         |
 
 #### C3 — Responder / MVP surfaces (UI-required, domain-absent)
 
-| ID | Decision | Blocked surface |
-| --- | --- | --- |
-| **G-I-30** | On-duty / availability state machine, events, matching tie-in (D-009 supplies *hours*, not the machine) | Live QRF matching, dashboard on-duty |
-| **G-I-31** | Chat/thread domain: entities, consent scope, API, retention | Persistent messaging (today: truthful UNAVAILABLE) |
-| **G-I-32** | Definitions + data sources for the four responder dashboard metrics | Showing numbers (today: omitted) |
-| **G-I-33** | Quick Resource Share: domain action + consent rule | Share control |
+| ID         | Decision                                                                                                | Blocked surface                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **G-I-30** | On-duty / availability state machine, events, matching tie-in (D-009 supplies _hours_, not the machine) | Live QRF matching, dashboard on-duty               |
+| **G-I-31** | Chat/thread domain: entities, consent scope, API, retention                                             | Persistent messaging (today: truthful UNAVAILABLE) |
+| **G-I-32** | Definitions + data sources for the four responder dashboard metrics                                     | Showing numbers (today: omitted)                   |
+| **G-I-33** | Quick Resource Share: domain action + consent rule                                                      | Share control                                      |
 
 #### C4 — Auth / tenancy
 
-| ID | Decision |
-| --- | --- |
+| ID         | Decision                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **G-I-34** | Challenge TTL, session idle/absolute timeout, MFA elevation TTL, rate-limit bounds, cross-instance revocation window (today: labelled `INFERRED` constants) |
-| **G-I-35** | How a passwordless contact binds to `tenant_id` at challenge time (client-supplied today) |
+| **G-I-35** | How a passwordless contact binds to `tenant_id` at challenge time (client-supplied today)                                                                   |
 
 #### C5 — Notifications / consent templates
 
-| ID | Decision |
-| --- | --- |
-| **G-I-37** | Event → recipient/channel/dedupe/template vocabulary; webhook auth/retry bounds as numbers |
+| ID         | Decision                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| **G-I-37** | Event → recipient/channel/dedupe/template vocabulary; webhook auth/retry bounds as numbers                    |
 | **G-I-38** | Whether consent-template publication is a released admin API / bootstrap hard-gate (mechanism exists in code) |
 
 **Exit:** Each accepted item becomes a 0.1.x spec patch in the P-n style (codify if impl already has a tested rule; otherwise owner writes the rule first).
@@ -193,11 +193,11 @@ Do **C1** before more fulfillment-adapter work. Do **C2** before claiming event-
 
 ### Wave D — Remaining capability adapters
 
-| ID | Status | What to decide | Unblocks |
-| --- | --- | --- | --- |
-| **D-019** | Pending | Production food adapter family + field-level disclosure projection (or explicit “manual-only through pilot”) | FOOD API path |
-| **D-020** | Pending | External peer-support adapter + projection (or explicit “manual/QRF only through pilot”) | External PEER_SUPPORT |
-| **D-010** | Future / pending | Who pays; reservation/payment architecture | Amadeus reservation; Uber payment auth |
+| ID        | Status           | What to decide                                                                                               | Unblocks                               |
+| --------- | ---------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| **D-019** | Pending          | Production food adapter family + field-level disclosure projection (or explicit “manual-only through pilot”) | FOOD API path                          |
+| **D-020** | Pending          | External peer-support adapter + projection (or explicit “manual/QRF only through pilot”)                     | External PEER_SUPPORT                  |
+| **D-010** | Future / pending | Who pays; reservation/payment architecture                                                                   | Amadeus reservation; Uber payment auth |
 
 D-017/D-018 stay decided. Wave D does not require D-011 unless the adapter path is signal-triggered.
 
@@ -207,15 +207,15 @@ D-017/D-018 stay decided. Wave D does not require D-011 unless the adapter path 
 
 These close **readiness**, not SPEC-017 conformance. Group for one owner sitting if possible.
 
-| Cluster | IDs | Decide |
-| --- | --- | --- |
-| Comms / identity | D-002, D-003, D-004 | Auth, SMS, email providers (and MFA factor taxonomy) |
-| Infra | D-001, D-005, D-022 | Hosting, production DB, durable job product |
-| Legal / data | D-006, D-007, D-013 | HIPAA classification, retention/deletion, counsel review |
-| Pilot ops | D-008, D-009 | Partner orgs, responder coverage hours |
-| Maps | D-014 | Production geocoding / “near you” |
-| Envelopes | D-021, D-023, D-024 | Capacity, SLOs/alerts, RTO/RPO |
-| Reporting | D-025 | Small-cell / aggregate privacy |
+| Cluster          | IDs                 | Decide                                                   |
+| ---------------- | ------------------- | -------------------------------------------------------- |
+| Comms / identity | D-002, D-003, D-004 | Auth, SMS, email providers (and MFA factor taxonomy)     |
+| Infra            | D-001, D-005, D-022 | Hosting, production DB, durable job product              |
+| Legal / data     | D-006, D-007, D-013 | HIPAA classification, retention/deletion, counsel review |
+| Pilot ops        | D-008, D-009        | Partner orgs, responder coverage hours                   |
+| Maps             | D-014               | Production geocoding / “near you”                        |
+| Envelopes        | D-021, D-023, D-024 | Capacity, SLOs/alerts, RTO/RPO                           |
+| Reporting        | D-025               | Small-cell / aggregate privacy                           |
 
 **Un-numbered, same wave when touched:** encryption key management; Follow-Up retry ceiling; Trusted Contact `relationship_label` enum; lost-all-channel recovery; SUAS-admin break-glass/dual-control; abandoned Check-In idle timeout.
 
@@ -233,17 +233,17 @@ Draft files are not authority. Do not implement islands, anonymous front door, o
 
 ## 3. Recommended owner order
 
-Smallest set that unblocks the most *product* (not hosting):
+Smallest set that unblocks the most _product_ (not hosting):
 
-| Priority | Item | Why this next |
-| --- | --- | --- |
-| 1 | **Wave A** (G-III-2, leftover headers) | **Drafted** as specs `0.1.6` (`cursor/spec-0.1.6-wave-a-hygiene-1036`). Owner merge required before re-pin. |
-| 2 | **Wave B — D-011** (+ G-I-28 action) | Only remaining load-bearing SPEC-017 gap |
-| 3 | **Wave C1** (G-I-6/7/8) | Stops fulfillment edge-case invention |
-| 4 | **Wave D — D-019/D-020** (or “manual through pilot”) | Completes capability-port story |
-| 5 | **G-I-30** if live QRF matching is the next UX goal | Dashboard/on-duty truth |
-| 6 | **D-010** when reservation/payment is in scope | Unblocks Amadeus book + Uber pay |
-| 7 | **Wave E** when a real pilot date exists | SPEC-018 |
+| Priority | Item                                                 | Why this next                                                                                               |
+| -------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 1        | **Wave A** (G-III-2, leftover headers)               | **Drafted** as specs `0.1.6` (`cursor/spec-0.1.6-wave-a-hygiene-1036`). Owner merge required before re-pin. |
+| 2        | **Wave B — D-011** (+ G-I-28 action)                 | Only remaining load-bearing SPEC-017 gap                                                                    |
+| 3        | **Wave C1** (G-I-6/7/8)                              | Stops fulfillment edge-case invention                                                                       |
+| 4        | **Wave D — D-019/D-020** (or “manual through pilot”) | Completes capability-port story                                                                             |
+| 5        | **G-I-30** if live QRF matching is the next UX goal  | Dashboard/on-duty truth                                                                                     |
+| 6        | **D-010** when reservation/payment is in scope       | Unblocks Amadeus book + Uber pay                                                                            |
+| 7        | **Wave E** when a real pilot date exists             | SPEC-018                                                                                                    |
 
 ---
 
