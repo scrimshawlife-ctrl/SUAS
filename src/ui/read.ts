@@ -27,6 +27,7 @@ interface QrfRow {
   service_request_id: string;
   status: ServiceRequestStatus;
   responder_assigned: boolean;
+  responder_notification_delivered: boolean;
 }
 
 export interface ActiveQrf {
@@ -37,14 +38,14 @@ export interface ActiveQrf {
 /**
  * The veteran's in-flight peer-support request, if one exists.
  *
- * `responderNotificationDelivered` is always `false`, and that is a finding
- * rather than a stub. MVP_REFERENCE.md §7.2 permits `RESPONDER_NOTIFIED` only
- * when the system "actually knows" a notification occurred, and the released
- * `notifications` table (migration 0008) records no Case or Service Request
- * linkage — there is no join from a delivery back to this request. Inventing
- * one through a `dedupe_key` naming convention would manufacture the very
- * certainty §7.2 forbids, so the surface stays on `SEARCHING` after assignment.
- * Returned to specs; see the Slice 10 conformance record §10.
+ * `responderNotificationDelivered` reflects a real delivery the system can see:
+ * a notification whose subject is this Service Request, addressed to the case's
+ * active responder, that reached a `SENT`/`DELIVERED` state. MVP_REFERENCE.md
+ * §7.2 permits `RESPONDER_NOTIFIED` only when the system "actually knows" a
+ * notification occurred, so an assignment alone still reads as `SEARCHING`. The
+ * subject linkage this depends on was added by accepted gap proposal P-12
+ * (migration 0010); before it, no join from a delivery back to the request
+ * existed and this was necessarily `false` (Slice 10 §10 item 1).
  */
 export async function readActiveQrf(
   db: Queryable,
@@ -59,7 +60,21 @@ export async function readActiveQrf(
                WHERE a.case_id = r.case_id
                  AND a.tenant_id = r.tenant_id
                  AND a.status = 'ACTIVE'
-            ) AS responder_assigned
+            ) AS responder_assigned,
+            EXISTS (
+              -- §7.2: a delivery the system can actually see — a notification
+              -- about this request, to the active responder, that went out.
+              SELECT 1 FROM case_assignments a
+               JOIN notifications n
+                 ON n.tenant_id = a.tenant_id
+                AND n.recipient_user_id = a.responder_user_id
+                AND n.subject_type = 'ServiceRequest'
+                AND n.subject_id = r.service_request_id
+                AND n.delivery_status IN ('SENT', 'DELIVERED')
+               WHERE a.case_id = r.case_id
+                 AND a.tenant_id = r.tenant_id
+                 AND a.status = 'ACTIVE'
+            ) AS responder_notification_delivered
        FROM service_requests r
        JOIN support_cases c
          ON c.case_id = r.case_id AND c.tenant_id = r.tenant_id
@@ -80,8 +95,7 @@ export async function readActiveQrf(
     facts: {
       requestStatus: row.status,
       responderAssigned: row.responder_assigned,
-      // See the note above: not knowable from released schema.
-      responderNotificationDelivered: false,
+      responderNotificationDelivered: row.responder_notification_delivered,
       // Degradation is observed by the caller that owns the dependency, not
       // inferred here from the absence of progress.
       coordinationDegraded: false,
