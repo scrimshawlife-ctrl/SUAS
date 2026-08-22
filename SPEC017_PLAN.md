@@ -18,10 +18,10 @@
 | 7 — Resources / fulfillment             | `IMPLEMENTED (manual paths)`   | [docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md](docs/slices/SLICE_07_RESOURCES_FULFILLMENT.md) |
 | 8 — Notifications                       | `IMPLEMENTED`                  | [docs/slices/SLICE_08_NOTIFICATIONS.md](docs/slices/SLICE_08_NOTIFICATIONS.md)                 |
 | 9 — Check-In / Support Signal interface | `IMPLEMENTED (interface only)` | [docs/slices/SLICE_09_CHECKINS_SIGNALS.md](docs/slices/SLICE_09_CHECKINS_SIGNALS.md)           |
-| 10 — MVP-reference UI                   | `NOT_STARTED`                  | —                                                                                              |
-| 11 — Scale / resilience harness         | `NOT_STARTED`                  | —                                                                                              |
+| 10 — MVP-reference UI                   | `IMPLEMENTED`                  | [docs/slices/SLICE_10_MVP_UI.md](docs/slices/SLICE_10_MVP_UI.md)                               |
+| 11 — Scale / resilience harness         | `IMPLEMENTED (drills only)`    | [docs/slices/SLICE_11_RESILIENCE_HARNESS.md](docs/slices/SLICE_11_RESILIENCE_HARNESS.md)       |
 
-Slices 1-9 returned sixty-three semantic/mechanism questions to specs; see the gaps section
+Slices 1-11 each returned semantic/mechanism questions to specs; see the gaps section
 of each record. Each slice has closed the seam the previous one left, except one.
 No readiness gate has advanced, and production remains blocked until SPEC-018.
 
