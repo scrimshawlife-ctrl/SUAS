@@ -95,8 +95,8 @@ describe('GET /api/v0/admin/build-info', () => {
     expect(response.statusCode).toBe(200);
 
     const body = response.json();
-    expect(body.spec_version).toBe('0.1.3');
-    expect(body.release_manifest).toBe('RELEASE_MANIFEST-0.1.3.md');
+    expect(body.spec_version).toBe('0.1.4');
+    expect(body.release_manifest).toBe('RELEASE_MANIFEST-0.1.4.md');
     expect(body.api_version).toBe('v0');
     expect(body.event_schema_version).toBe('0.1.0');
     expect(body.schema_version).toBe(EXPECTED_SCHEMA_VERSION);

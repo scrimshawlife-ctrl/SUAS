@@ -10,9 +10,9 @@ Public site: https://scrimshawlife-ctrl.github.io/SUAS/
 
 Canonical released specs:
 
-- specification stack: `0.1.3`
-- specs merge: `33c6f1925a8f8eb7ea1f52e77a102b28a249430f`
-- manifest: `RELEASE_MANIFEST-0.1.3.md`
+- specification stack: `0.1.4`
+- specs merge: `b4baad3fc39af36e22df9fd3bc3f523392f19a2e`
+- manifest: `RELEASE_MANIFEST-0.1.4.md`
 - current stage: `SPEC-017` implementation conformance
 - implementation authority: `RELEASED_FOR_IMPLEMENTATION`
 - pilot readiness: `NOT_READY`
@@ -80,7 +80,7 @@ Logical classes are `LOCAL`, `TEST`, `STAGING`, `PRODUCTION`. LOCAL/TEST/STAGING
 
 ## Release boundary
 
-v0.1.3 authorizes implementation but not production operation.
+v0.1.4 authorizes implementation but not production operation.
 
 Production-unavailable until later decision/evidence closure:
 

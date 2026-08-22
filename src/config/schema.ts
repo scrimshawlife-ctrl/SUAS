@@ -406,13 +406,13 @@ export const configSchema = rawConfigSchema.superRefine((raw, ctx) => {
   }
 
   // HANDOFF.md §2 "Production deployment: prohibited";
-  // RELEASE_MANIFEST-0.1.3.md "Readiness boundary".
+  // RELEASE_MANIFEST-0.1.4.md "Readiness boundary".
   if (environment === 'PRODUCTION' && !SPEC_018_PRODUCTION_AUTHORIZED) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message:
         'SUAS_ENV=PRODUCTION is rejected: production deployment is prohibited until SPEC-018 ' +
-        'records launch-readiness evidence (HANDOFF.md §2; RELEASE_MANIFEST-0.1.3.md "Readiness boundary").',
+        'records launch-readiness evidence (HANDOFF.md §2; RELEASE_MANIFEST-0.1.4.md "Readiness boundary").',
     });
   }
 
