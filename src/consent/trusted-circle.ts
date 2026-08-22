@@ -34,6 +34,15 @@ export type TrustedContactStatus = (typeof TRUSTED_CONTACT_STATUSES)[number];
  */
 const USABLE_STATUSES: readonly TrustedContactStatus[] = ['ACCEPTED'];
 
+/**
+ * Terminal statuses. TRUSTED_CIRCLE.md §2 ends the lifecycle at REMOVED/REVOKED;
+ * a relationship past either is over and must not transition again (in
+ * particular, never back to ACCEPTED — that would silently restore a removed
+ * contact's membership and, with any leftover grant, their access).
+ * Re-establishing a relationship requires a fresh invite.
+ */
+const TERMINAL_STATUSES: readonly TrustedContactStatus[] = ['REMOVED', 'REVOKED'];
+
 export interface TrustedContact {
   readonly trustedContactId: string;
   readonly tenantId: string;
@@ -78,6 +87,19 @@ export class TrustedContactChannelRequiredError extends Error {
         '(SUAS-specs TRUSTED_CIRCLE.md §3.1).',
     );
     this.name = 'TrustedContactChannelRequiredError';
+  }
+}
+
+export class TrustedContactTerminalError extends Error {
+  readonly code = 'UNPROCESSABLE';
+  readonly httpStatus = 422;
+
+  constructor(status: TrustedContactStatus) {
+    super(
+      `A ${status} Trusted Contact is in a terminal state and cannot change status ` +
+        `(SUAS-specs TRUSTED_CIRCLE.md §2). Re-establishing the relationship requires a new invite.`,
+    );
+    this.name = 'TrustedContactTerminalError';
   }
 }
 
@@ -169,17 +191,30 @@ export async function setTrustedContactStatus(
   status: Exclude<TrustedContactStatus, 'INVITED'>,
 ): Promise<TrustedContact | undefined> {
   const terminal = status === 'REMOVED' || status === 'REVOKED';
+  // The `status <> ALL(terminal)` predicate makes terminal immutability atomic:
+  // a REMOVED/REVOKED row matches nothing and is never re-opened, even under a
+  // concurrent transition.
   const result = await db.query<ContactRow>(
     `UPDATE trusted_contacts
        SET status = $3::suas_trusted_contact_status,
            ended_at = CASE WHEN $4::boolean THEN now() ELSE ended_at END,
            updated_at = now()
      WHERE tenant_id = $1 AND trusted_contact_id = $2
+       AND status <> ALL($5::suas_trusted_contact_status[])
      RETURNING ${CONTACT_COLUMNS}`,
-    [tenantId, trustedContactId, status, terminal],
+    [tenantId, trustedContactId, status, terminal, TERMINAL_STATUSES],
   );
   const row = result.rows[0];
-  return row === undefined ? undefined : toContact(row);
+  if (row === undefined) {
+    // Distinguish "no such contact" (undefined, as before) from "refused
+    // because the contact is already terminal".
+    const existing = await findTrustedContact(db, tenantId, trustedContactId);
+    if (existing !== undefined && TERMINAL_STATUSES.includes(existing.status)) {
+      throw new TrustedContactTerminalError(existing.status);
+    }
+    return undefined;
+  }
+  return toContact(row);
 }
 
 export async function findTrustedContact(

@@ -17,6 +17,7 @@ import {
   createConsentTemplateVersion,
   evaluateDisclosure,
   expireDueGrants,
+  findTrustedContact,
   grantConsent,
   InvalidConsentScopeError,
   inviteTrustedContact,
@@ -26,6 +27,7 @@ import {
   revokeConsent,
   setTrustedContactStatus,
   type TrustedContact,
+  TrustedContactTerminalError,
 } from '../../src/consent/index.js';
 import { createUser, setUserStatus } from '../../src/identity/index.js';
 import { syntheticEmail } from '../../src/testing/fixture-boundary.js';
@@ -458,6 +460,25 @@ describe('TRUSTED_CIRCLE.md §1, §6 — membership is evaluated before grants',
       );
       expect(decision.allowed).toBe(false);
       expect(decision.allowed === false && decision.reason).toBe('MEMBERSHIP_NOT_USABLE');
+    },
+  );
+
+  it.each(['REMOVED', 'REVOKED'] as const)(
+    'refuses to re-activate a %s contact, leaving it terminal',
+    async (terminalStatus) => {
+      const tenantId = syntheticTenantId();
+      const subject = await veteran(tenantId);
+      const contact = await acceptedContact(tenantId, subject.userId);
+      await setTrustedContactStatus(pool, tenantId, contact.trustedContactId, terminalStatus);
+
+      // TRUSTED_CIRCLE.md §2: a terminal relationship cannot be re-opened; in
+      // particular it must not silently return to ACCEPTED.
+      await expect(
+        setTrustedContactStatus(pool, tenantId, contact.trustedContactId, 'ACCEPTED'),
+      ).rejects.toThrow(TrustedContactTerminalError);
+
+      const after = await findTrustedContact(pool, tenantId, contact.trustedContactId);
+      expect(after?.status).toBe(terminalStatus);
     },
   );
 

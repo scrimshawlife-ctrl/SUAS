@@ -35,6 +35,7 @@ export {
   setTrustedContactStatus,
   TRUSTED_CONTACT_STATUSES,
   TrustedContactChannelRequiredError,
+  TrustedContactTerminalError,
   type InviteTrustedContactInput,
   type TrustedContact,
   type TrustedContactStatus,
