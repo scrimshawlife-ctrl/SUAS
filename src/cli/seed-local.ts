@@ -285,6 +285,11 @@ async function main(): Promise<void> {
       tenantId: TENANT_ID,
       userId: veteran.userId,
     });
+    const responderSession = await createSession(pool, secret, {
+      tenantId: TENANT_ID,
+      userId: responder.userId,
+      organizationId: org.organizationId,
+    });
     const adminSession = await withTransaction(pool, async (tx) => {
       const issued = await createSession(tx, secret, {
         tenantId: TENANT_ID,
@@ -314,6 +319,7 @@ async function main(): Promise<void> {
       resources: { count: resourceIds.length, categories: RESOURCE_SPECS.map((s) => s.category) },
       sessions: {
         veteranBearer: veteranSession.credential,
+        responderBearer: responderSession.credential,
         adminBearer: adminSession.credential,
         expiresAt: veteranSession.session.expiresAt.toISOString(),
       },
