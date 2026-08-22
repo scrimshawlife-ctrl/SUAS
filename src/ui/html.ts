@@ -30,6 +30,47 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ESCAPES[character] ?? character);
 }
 
+/**
+ * Attributes whose value is a URL, and therefore a script-injection surface that
+ * text-escaping alone does not close.
+ */
+const URL_ATTRIBUTES: ReadonlySet<string> = new Set([
+  'href',
+  'src',
+  'action',
+  'formaction',
+  'poster',
+  'xlink:href',
+]);
+
+/** Schemes safe to keep on a URL attribute. Everything else is defanged. */
+const SAFE_URL_SCHEME = /^(?:https?:|mailto:|tel:)/i;
+/** A leading scheme token, e.g. `javascript:` or `data:`. */
+const LEADING_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
+/**
+ * Neutralize a dangerous scheme in a URL-bearing attribute.
+ *
+ * `escapeHtml` makes a value safe as quoted attribute *text*, but it does not
+ * stop a `javascript:` / `data:` / `vbscript:` scheme from executing when the
+ * attribute is a URL (e.g. an `<a href>`): those schemes contain none of the
+ * characters `escapeHtml` rewrites. Relative and same-document references (which
+ * carry no scheme) and an allow-list of safe schemes pass through unchanged;
+ * anything else is defanged to `#`.
+ *
+ * Defense-in-depth: no current surface routes untrusted data into a URL
+ * attribute, and every existing href is relative or same-document, so this
+ * changes no rendered output today. It exists so a future surface cannot
+ * introduce script through a URL attribute (SECURITY.md §5 injection threats;
+ * the same "veteran text is data, never markup" rule `escapeHtml` enforces).
+ */
+export function sanitizeUrl(value: string): string {
+  const trimmed = value.trim();
+  // No scheme (relative path, query, fragment, or bare path) — safe by design.
+  if (!LEADING_SCHEME.test(trimmed)) return trimmed;
+  return SAFE_URL_SCHEME.test(trimmed) ? trimmed : '#';
+}
+
 /** A rendered fragment that is already escaped and must not be escaped again. */
 export interface SafeHtml {
   readonly __safeHtml: string;
@@ -74,7 +115,10 @@ function attributes(attrs: Attributes): string {
       parts.push(` ${name}`);
       continue;
     }
-    parts.push(` ${name}="${escapeHtml(String(value))}"`);
+    const text = URL_ATTRIBUTES.has(name.toLowerCase())
+      ? sanitizeUrl(String(value))
+      : String(value);
+    parts.push(` ${name}="${escapeHtml(text)}"`);
   }
   return parts.join('');
 }
