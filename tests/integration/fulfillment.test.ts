@@ -28,6 +28,7 @@ import {
   FakeAdapter,
   findFulfillment,
   freshnessBand,
+  FulfillmentNotConfirmableError,
   IllegalReferralTransitionError,
   initiateFulfillment,
   listAttempts,
@@ -721,6 +722,28 @@ describe('FULFILLMENT.md §6 — confirmation requires a human', () => {
       disputeFulfillment(tx, tenantId, request.serviceRequestId, 'the ride never arrived'),
     );
     expect(disputed.state).toBe('DISPUTED');
+    expect((await findFulfillment(pool, tenantId, request.serviceRequestId))?.state).toBe(
+      'DISPUTED',
+    );
+  });
+
+  it('refuses to confirm a disputed fulfillment, leaving it DISPUTED', async () => {
+    const { tenantId, request } = await completedFulfillment();
+    await withTransaction(pool, (tx) =>
+      disputeFulfillment(tx, tenantId, request.serviceRequestId, 'the ride never arrived'),
+    );
+
+    await expect(
+      withTransaction(pool, (tx) =>
+        confirmFulfillment(tx, {
+          tenantId,
+          serviceRequestId: request.serviceRequestId,
+          veteranConfirmed: true,
+        }),
+      ),
+    ).rejects.toThrow(FulfillmentNotConfirmableError);
+
+    // The dispute stands; a confirmation attempt does not overwrite it.
     expect((await findFulfillment(pool, tenantId, request.serviceRequestId))?.state).toBe(
       'DISPUTED',
     );
