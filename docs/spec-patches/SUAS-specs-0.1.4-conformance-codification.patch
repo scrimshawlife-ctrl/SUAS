@@ -1,7 +1,7 @@
 From 06f34821576e12570833ab0d908ce89e2e2baada Mon Sep 17 00:00:00 2001
 From: Cursor Agent <cursoragent@cursor.com>
 Date: Sat, 22 Aug 2026 05:59:48 +0000
-Subject: [PATCH 1/4] specs(0.1.4): adopt additive data-model gaps
+Subject: [PATCH 1/5] specs(0.1.4): adopt additive data-model gaps
  P-12,P-13,P-14,P-15,P-16,P-21,P-22
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -160,7 +160,7 @@ index 588c8dc..39ceabc 100644
 From 65c0dbc661a78ec84c984c33e9a798ea9abbd496 Mon Sep 17 00:00:00 2001
 From: Cursor Agent <cursoragent@cursor.com>
 Date: Sat, 22 Aug 2026 06:02:58 +0000
-Subject: [PATCH 2/4] specs(0.1.4): codify state machines + vocabulary
+Subject: [PATCH 2/5] specs(0.1.4): codify state machines + vocabulary
  P-2,P-4,P-5,P-6,P-7,P-8,P-9,P-10,P-11,P-16
 
 - CASES.md: ACTIVATE is the only ASSIGNED->ACTIVE edge (P-9); closed blocking
@@ -369,7 +369,7 @@ index d625ec8..76998de 100644
 From c4c3e98e26a8b4addb89459a8b29ae32f479b204 Mon Sep 17 00:00:00 2001
 From: Cursor Agent <cursoragent@cursor.com>
 Date: Sat, 22 Aug 2026 06:05:05 +0000
-Subject: [PATCH 3/4] specs(0.1.4): codify consent, signal selection, QRF
+Subject: [PATCH 3/5] specs(0.1.4): codify consent, signal selection, QRF
  mapping, versioning P-1,P-3,P-17..P-21,P-23
 
 - CONSENT.md: grantee_id typing per grantee_type (P-18); closed permission/scope
@@ -525,7 +525,7 @@ index 809f4a5..70f68eb 100644
 From f0285363015c1045516216de4a26de1cd77e3efd Mon Sep 17 00:00:00 2001
 From: Cursor Agent <cursoragent@cursor.com>
 Date: Sat, 22 Aug 2026 06:08:01 +0000
-Subject: [PATCH 4/4] =?UTF-8?q?specs(0.1.4):=20release=20machinery=20?=
+Subject: [PATCH 4/5] =?UTF-8?q?specs(0.1.4):=20release=20machinery=20?=
  =?UTF-8?q?=E2=80=94=20manifest,=20changelog,=20versioning=20lineage,=20RE?=
  =?UTF-8?q?ADME/HANDOFF=20pointers?=
 MIME-Version: 1.0
@@ -777,6 +777,77 @@ index 70f68eb..4312336 100644
  
  ## 6. Implementation citations
  
+-- 
+2.43.0
+
+
+From 7af94e71ce71d94b52099baf12f37a1e116278e7 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sat, 22 Aug 2026 06:23:09 +0000
+Subject: [PATCH 5/5] specs(0.1.4): align subject_type/destination_type enum
+ casing with merged implementation
+
+The P-12/P-13 codifications must match the values the merged implementation
+actually stores (they codify implemented behavior):
+- notifications.subject_type: SupportCase|ServiceRequest|Referral (impl stores
+  'ServiceRequest'; matches Domain/Audit aggregate-type naming), not UPPER_SNAKE.
+- referrals.destination_type: Resource|ServiceProvider|Organization|External
+  (impl/test stores 'Organization'), not UPPER_SNAKE.
+- suas_admin_grants PK named admin_grant_id (matches src/identity/admins.ts).
+---
+ DATA_MODEL.md    | 4 ++--
+ NOTIFICATIONS.md | 2 +-
+ REFERRALS.md     | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/DATA_MODEL.md b/DATA_MODEL.md
+index d35c955..29513aa 100644
+--- a/DATA_MODEL.md
++++ b/DATA_MODEL.md
+@@ -33,7 +33,7 @@
+ Canonical organization, role, membership status, queue-availability fields and timestamps. Active membership/role is authoritative at mutation time.
+ 
+ ### suas_admin_grants
+-The global SUAS-admin role is an auditable grant record (0.1.4), not a boolean on the user row: `grant_id`, `user_id`, `granted_by`, nullable `revoked_by`, `status = ACTIVE|REVOKED`, and grant/revoke timestamps. "Who made this person a SUAS admin, and when" is answerable from history; a user is a SUAS admin iff they hold an `ACTIVE` grant. See [AUTH.md](AUTH.md) §6.
++The global SUAS-admin role is an auditable grant record (0.1.4), not a boolean on the user row: `admin_grant_id`, `user_id`, `granted_by`, nullable `revoked_by`, `status = ACTIVE|REVOKED`, and grant/revoke timestamps. "Who made this person a SUAS admin, and when" is answerable from history; a user is a SUAS admin iff they hold an `ACTIVE` grant. See [AUTH.md](AUTH.md) §6.
+ 
+ ---
+ 
+@@ -135,7 +135,7 @@ User/channel/enabled state.
+ ### notifications
+ - PK `notification_id`; tenant; recipient; reason/policy key; channel; consent/system basis; template version.
+ - `dedupe_key`/logical-send identity when generating policy can be delivered more than once.
+-- optional subject reference `subject_type` + `subject_id` (0.1.4) linking a logical send to the workflow entity it was sent for; `subject_type` is one of `SUPPORT_CASE|SERVICE_REQUEST|REFERRAL` and `subject_id` is that entity's id in the same tenant. Additive and nullable; existing sends and dedupe are unchanged.
++- optional subject reference `subject_type` + `subject_id` (0.1.4) linking a logical send to the workflow entity it was sent for; `subject_type` is one of the canonical entity-type names `SupportCase|ServiceRequest|Referral` (matching the aggregate-type naming used on Domain/Audit Events) and `subject_id` is that entity's id in the same tenant. Additive and nullable; existing sends and dedupe are unchanged.
+ - canonical delivery status `QUEUED|SENT|FAILED|DELIVERED|BOUNCED|UNDELIVERABLE`; attempt count/last attempt/sent timestamps.
+ - one row per logical send; transport attempt history lives in immutable Audit Events under current contract.
+ - dedupe uniqueness is scoped by tenant + recipient/channel/reason/policy as defined by the generating policy; deliberate reminder/escalation gets a new logical identity.
+diff --git a/NOTIFICATIONS.md b/NOTIFICATIONS.md
+index 5cde0e5..2190060 100644
+--- a/NOTIFICATIONS.md
++++ b/NOTIFICATIONS.md
+@@ -39,7 +39,7 @@ Required logical fields:
+ - channel;
+ - `consent_basis` or documented system basis;
+ - `template_version`;
+-- optional subject reference `subject_type` + `subject_id` (0.1.4) linking the send to the workflow entity it was sent for, where `subject_type ∈ {SUPPORT_CASE, SERVICE_REQUEST, REFERRAL}`; additive and nullable, and required for MVP `RESPONDER_NOTIFIED` to be truthfully reachable ([MVP_REFERENCE.md](MVP_REFERENCE.md) §7.2, [DATA_MODEL.md](DATA_MODEL.md) §9);
++- optional subject reference `subject_type` + `subject_id` (0.1.4) linking the send to the workflow entity it was sent for, where `subject_type ∈ {SupportCase, ServiceRequest, Referral}` (the canonical entity-type names); additive and nullable, and required for MVP `RESPONDER_NOTIFIED` to be truthfully reachable ([MVP_REFERENCE.md](MVP_REFERENCE.md) §7.2, [DATA_MODEL.md](DATA_MODEL.md) §9);
+ - logical-send `dedupe_key`/equivalent deterministic identity where the generating policy can be delivered more than once;
+ - `delivery_status`;
+ - `attempt_count`, `last_attempt_at`, `sent_at` as applicable;
+diff --git a/REFERRALS.md b/REFERRALS.md
+index 57d8216..745fee1 100644
+--- a/REFERRALS.md
++++ b/REFERRALS.md
+@@ -16,7 +16,7 @@ A **Referral** is a directed, consented handoff to a destination Resource or Ser
+ ## 2. Required content
+ 
+ - `consent_grant_id` or documented accepted system basis that authorizes the destination/payload at send time;
+-- destination as a typed `{destination_type, destination_id}` (0.1.4), where `destination_type` is the closed set `RESOURCE|SERVICE_PROVIDER|ORGANIZATION|EXTERNAL` and `destination_id` references the entity of that type (for `EXTERNAL`, an opaque recorded reference for a destination not modeled as a SUAS entity);
++- destination as a typed `{destination_type, destination_id}` (0.1.4), where `destination_type` is the closed set of canonical entity-type names `Resource|ServiceProvider|Organization|External` and `destination_id` references the entity of that type (for `External`, an opaque recorded reference for a destination not modeled as a SUAS entity);
+ - reason;
+ - method (`IN_APP`, `PHONE`, `EMAIL`, or accepted future method);
+ - status;
 -- 
 2.43.0
 
