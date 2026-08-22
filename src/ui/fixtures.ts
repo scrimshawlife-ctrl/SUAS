@@ -230,7 +230,9 @@ export const VISUAL_FIXTURES: readonly VisualFixture[] = [
           id: 'res-0001',
           name: 'Example County Food Pantry',
           coverage: 'Example County',
-          contactMethod: `Phone ${syntheticPhone(1)}`,
+          // P-13: a recorded PHONE scheme becomes a direct `tel:` action.
+          contactMethod: syntheticPhone(1),
+          contactMethodKind: 'PHONE',
           hours: 'Weekdays, 9am to 4pm',
           freshness: 'FRESH',
           staleWarning: false,
@@ -239,7 +241,9 @@ export const VISUAL_FIXTURES: readonly VisualFixture[] = [
           id: 'res-0002',
           name: 'Example Community Meal Program',
           coverage: 'Example County',
+          // P-13: a recorded EMAIL scheme becomes a direct `mailto:` action.
           contactMethod: syntheticEmail('meals'),
+          contactMethodKind: 'EMAIL',
           cost: 'No cost',
           freshness: 'AGING',
           staleWarning: true,

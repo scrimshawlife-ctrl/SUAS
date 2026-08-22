@@ -54,6 +54,8 @@ export {
   type InitiateFulfillmentResult,
 } from './router.js';
 export {
+  assertContactMethodKind,
+  CONTACT_METHOD_KINDS,
   createResource,
   findResource,
   freshnessBand,
@@ -66,6 +68,7 @@ export {
   setResourceActive,
   veteranVisibleResource,
   verifyResource,
+  type ContactMethodKind,
   type FreshnessBand,
   type Resource,
   type ResourceSearchFilters,

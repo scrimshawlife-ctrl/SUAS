@@ -54,6 +54,7 @@ import type {
   QrfRequestViewModel,
   ResourceCategoriesViewModel,
   ResourceListViewModel,
+  ResourceRowViewModel,
   ResponderAvailabilityViewModel,
   ResponderDashboardViewModel,
   ShellViewModel,
@@ -313,6 +314,31 @@ export function renderResourceCategories(model: ResourceCategoriesViewModel): st
   return assertSurface('RESOURCE_CATEGORIES', markup);
 }
 
+/**
+ * Render a resource's contact path.
+ *
+ * §8 "direct phone/email/web actions where allowed": with a recorded scheme
+ * (P-13) the row offers a real `tel:`/`mailto:`/web action; `sanitizeUrl`
+ * (html.ts) allow-lists exactly those schemes, so a hostile catalog value cannot
+ * smuggle `javascript:`. Without a kind — or with `FREEFORM` — the value is shown
+ * as text and no scheme is guessed, preserving the released behavior.
+ */
+function contactRow(value: string, kind: ResourceRowViewModel['contactMethodKind']): Renderable {
+  switch (kind) {
+    case 'PHONE':
+      return a(
+        { class: 'action-secondary', href: `tel:${value.replace(/\s+/g, '')}` },
+        `Call: ${value}`,
+      );
+    case 'EMAIL':
+      return a({ class: 'action-secondary', href: `mailto:${value}` }, `Email: ${value}`);
+    case 'URL':
+      return a({ class: 'action-secondary', href: value }, `Visit website: ${value}`);
+    default:
+      return p({}, `Contact: ${value}`);
+  }
+}
+
 export function renderResourceList(model: ResourceListViewModel): string {
   const markup = document(model.shell, [
     // §8: strong category header and clear back navigation.
@@ -334,13 +360,11 @@ export function renderResourceList(model: ResourceListViewModel): string {
                 : undefined,
               row.hours === undefined ? undefined : p({}, `Hours: ${row.hours}`),
               row.cost === undefined ? undefined : p({}, `Cost: ${row.cost}`),
-              // §8 wants direct call/email/web actions, but RESOURCES.md §6
-              // releases contact_method as one unstructured string. The value is
-              // shown as recorded; guessing a scheme from it would invent a
-              // structure the catalog does not have.
+              // §8: offer a direct action when the catalog recorded the scheme
+              // (P-13); otherwise show the value as text and guess nothing.
               row.contactMethod === undefined
                 ? p({ class: 'muted' }, 'No contact method recorded.')
-                : p({}, `Contact: ${row.contactMethod}`),
+                : contactRow(row.contactMethod, row.contactMethodKind),
             ),
           ),
         ),

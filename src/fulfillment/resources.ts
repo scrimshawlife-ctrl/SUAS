@@ -24,6 +24,25 @@ export type FreshnessBand = 'FRESH' | 'AGING' | 'STALE' | 'UNVERIFIED';
 export const FRESHNESS_AGING_DAYS = 30;
 export const FRESHNESS_STALE_DAYS = 90;
 
+/**
+ * The scheme of a Resource `contact_method` (P-13 / RESOURCES.md §6,
+ * MVP_REFERENCE.md §8). `PHONE`/`EMAIL`/`URL` are actionable schemes a surface
+ * may turn into a direct `tel:`/`mailto:`/web action; `FREEFORM` (and an absent
+ * value) is recorded text with no action. The closed set is owned here so a
+ * renderer never has to parse a scheme out of free text.
+ */
+export const CONTACT_METHOD_KINDS = ['PHONE', 'EMAIL', 'URL', 'FREEFORM'] as const;
+export type ContactMethodKind = (typeof CONTACT_METHOD_KINDS)[number];
+
+export function assertContactMethodKind(value: string): asserts value is ContactMethodKind {
+  if (!(CONTACT_METHOD_KINDS as readonly string[]).includes(value)) {
+    throw new ResourceValidationError(
+      `"${value}" is not a known contact-method kind. Allowed: ${CONTACT_METHOD_KINDS.join(', ')} ` +
+        `(SUAS-specs RESOURCES.md §6; gap proposal P-13).`,
+    );
+  }
+}
+
 export interface Resource {
   readonly resourceId: string;
   readonly tenantId: string;
@@ -35,6 +54,8 @@ export interface Resource {
   readonly lastVerifiedAt: Date | undefined;
   readonly verificationSource: string | undefined;
   readonly contactMethod: string | undefined;
+  /** Scheme of `contactMethod` (P-13); `undefined` means unstructured text. */
+  readonly contactMethodKind: ContactMethodKind | undefined;
   readonly referralMethod: string | undefined;
   readonly hours: string | undefined;
   readonly cost: string | undefined;
@@ -52,6 +73,7 @@ interface ResourceRow {
   last_verified_at: Date | null;
   verification_source: string | null;
   contact_method: string | null;
+  contact_method_kind: ContactMethodKind | null;
   referral_method: string | null;
   hours: string | null;
   cost: string | null;
@@ -60,8 +82,8 @@ interface ResourceRow {
 
 const RESOURCE_COLUMNS = `
   resource_id, tenant_id, service_name, category, counties, integration_modes,
-  active, last_verified_at, verification_source, contact_method, referral_method,
-  hours, cost, eligibility
+  active, last_verified_at, verification_source, contact_method, contact_method_kind,
+  referral_method, hours, cost, eligibility
 `;
 
 function toResource(row: ResourceRow): Resource {
@@ -76,6 +98,7 @@ function toResource(row: ResourceRow): Resource {
     lastVerifiedAt: row.last_verified_at ?? undefined,
     verificationSource: row.verification_source ?? undefined,
     contactMethod: row.contact_method ?? undefined,
+    contactMethodKind: row.contact_method_kind ?? undefined,
     referralMethod: row.referral_method ?? undefined,
     hours: row.hours ?? undefined,
     cost: row.cost ?? undefined,
@@ -137,6 +160,8 @@ export interface CreateResourceInput {
   readonly integrationModes?: readonly string[];
   readonly serviceProviderId?: string;
   readonly contactMethod?: string;
+  /** Scheme of `contactMethod` (P-13). Omit for unstructured text. */
+  readonly contactMethodKind?: string;
   readonly referralMethod?: string;
   readonly hours?: string;
   readonly cost?: string;
@@ -156,11 +181,22 @@ export async function createResource(db: Queryable, input: CreateResourceInput):
     }
   }
 
+  if (input.contactMethodKind !== undefined) {
+    assertContactMethodKind(input.contactMethodKind);
+    // A scheme with nothing to act on would render a broken action.
+    if (input.contactMethod === undefined || input.contactMethod.trim() === '') {
+      throw new ResourceValidationError(
+        'A contact_method_kind requires a contact_method value (SUAS-specs RESOURCES.md §6; P-13).',
+      );
+    }
+  }
+
   const result = await db.query<ResourceRow>(
     `INSERT INTO resources
        (resource_id, tenant_id, service_provider_id, service_name, category, counties,
-        integration_modes, contact_method, referral_method, hours, cost, eligibility)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::suas_integration_mode[], $8, $9, $10, $11, $12)
+        integration_modes, contact_method, contact_method_kind, referral_method, hours,
+        cost, eligibility)
+     VALUES ($1, $2, $3, $4, $5, $6, $7::suas_integration_mode[], $8, $9, $10, $11, $12, $13)
      RETURNING ${RESOURCE_COLUMNS}`,
     [
       randomUUID(),
@@ -171,6 +207,7 @@ export async function createResource(db: Queryable, input: CreateResourceInput):
       input.counties ?? [],
       modes,
       input.contactMethod ?? null,
+      input.contactMethodKind ?? null,
       input.referralMethod ?? null,
       input.hours ?? null,
       input.cost ?? null,
@@ -378,5 +415,6 @@ export function veteranVisibleResource(
     hours: resource.hours,
     cost: resource.cost,
     contact_method: resource.contactMethod,
+    contact_method_kind: resource.contactMethodKind,
   };
 }

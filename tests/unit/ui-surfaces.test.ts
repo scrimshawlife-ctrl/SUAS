@@ -204,6 +204,98 @@ describe('MVP_REFERENCE.md §8 — resource screens', () => {
     expect(markup).not.toContain('mailto:');
   });
 
+  it('offers a direct tel: action when the catalog records a PHONE scheme (P-13)', () => {
+    const markup = renderResourceList({
+      shell,
+      categoryLabel: 'Food',
+      backHref: '/app/resources',
+      rows: [
+        {
+          id: 'r1',
+          name: 'Example Pantry',
+          contactMethod: '+1-555-555-0101',
+          contactMethodKind: 'PHONE',
+          freshness: 'FRESH',
+          staleWarning: false,
+        },
+      ],
+    });
+    expect(markup).toContain('href="tel:+1-555-555-0101"');
+    expect(markup).toContain('Call:');
+  });
+
+  it('offers a mailto: action for an EMAIL scheme and a web link for a URL scheme (P-13)', () => {
+    const markup = renderResourceList({
+      shell,
+      categoryLabel: 'Food',
+      backHref: '/app/resources',
+      rows: [
+        {
+          id: 'r1',
+          name: 'Example Meals',
+          contactMethod: 'meals@example.org',
+          contactMethodKind: 'EMAIL',
+          freshness: 'FRESH',
+          staleWarning: false,
+        },
+        {
+          id: 'r2',
+          name: 'Example Web Intake',
+          contactMethod: 'https://example.org/intake',
+          contactMethodKind: 'URL',
+          freshness: 'FRESH',
+          staleWarning: false,
+        },
+      ],
+    });
+    expect(markup).toContain('href="mailto:meals@example.org"');
+    expect(markup).toContain('href="https://example.org/intake"');
+  });
+
+  it('renders a FREEFORM contact as text and guesses no scheme (P-13)', () => {
+    const markup = renderResourceList({
+      shell,
+      categoryLabel: 'Food',
+      backHref: '/app/resources',
+      rows: [
+        {
+          id: 'r1',
+          name: 'Example Pantry',
+          contactMethod: 'Walk in during posted hours',
+          contactMethodKind: 'FREEFORM',
+          freshness: 'FRESH',
+          staleWarning: false,
+        },
+      ],
+    });
+    expect(markup).toContain('Contact: Walk in during posted hours');
+    expect(markup).not.toContain('tel:');
+    expect(markup).not.toContain('mailto:');
+  });
+
+  it('defangs a hostile URL scheme rather than rendering an executable action (P-13)', () => {
+    // Constructed so the source carries no literal script-url token.
+    const hostile = `java${'script'}:alert(1)`;
+    const markup = renderResourceList({
+      shell,
+      categoryLabel: 'Food',
+      backHref: '/app/resources',
+      rows: [
+        {
+          id: 'r1',
+          name: 'Example Hostile',
+          contactMethod: hostile,
+          contactMethodKind: 'URL',
+          freshness: 'FRESH',
+          staleWarning: false,
+        },
+      ],
+    });
+    // The href is neutralized to '#'; the raw value never reaches a live href.
+    expect(markup).not.toContain(`href="${hostile}"`);
+    expect(markup).toContain('href="#"');
+  });
+
   it('shows a truthful empty state rather than an empty page', () => {
     const markup = renderResourceList({
       shell,

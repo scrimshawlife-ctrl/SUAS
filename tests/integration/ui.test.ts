@@ -210,6 +210,42 @@ describe('MVP_REFERENCE.md §8 — resource screens read the catalog', () => {
     expect(response.body).not.toContain('tel:');
   });
 
+  it('offers a direct tel: action when the catalog records a PHONE scheme (P-13)', async () => {
+    const { credential, tenantId } = await signIn();
+    const resource = await createResource(pool(), {
+      tenantId,
+      serviceName: 'Example County Food Pantry',
+      category: 'FOOD',
+      counties: ['Example County'],
+      integrationModes: ['MANUAL_COORDINATION'],
+      contactMethod: '+1-555-555-0101',
+      contactMethodKind: 'PHONE',
+    });
+    const actorId = randomUUID();
+    await verifyResource(pool(), {
+      tenantId,
+      resourceId: resource.resourceId,
+      verificationSource: 'Called the listed number during posted hours',
+      actorId,
+    });
+    await setResourceActive(pool(), {
+      tenantId,
+      resourceId: resource.resourceId,
+      active: true,
+      actorId,
+    });
+
+    const response = await app.server.inject({
+      method: 'GET',
+      url: '/app/resources/food',
+      headers: authorized(credential),
+    });
+
+    expect(response.statusCode).toBe(200);
+    // §8 / P-13: the recorded scheme becomes a real action for the veteran.
+    expect(response.body).toContain('href="tel:+1-555-555-0101"');
+  });
+
   it('never shows an unverified resource to a veteran', async () => {
     const { credential, tenantId } = await signIn();
     await createResource(pool(), {

@@ -23,7 +23,11 @@
  */
 
 import type { Pool, PoolClient } from 'pg';
-import { assertSyntheticEnvironment, syntheticEmail } from '../testing/fixture-boundary.js';
+import {
+  assertSyntheticEnvironment,
+  syntheticEmail,
+  syntheticPhone,
+} from '../testing/fixture-boundary.js';
 import { loadConfig } from '../config/index.js';
 import { createPool, withTransaction } from '../db/index.js';
 import {
@@ -129,6 +133,8 @@ interface ResourceSpec {
   readonly category: string;
   readonly counties: readonly string[];
   readonly contactMethod: string;
+  /** P-13 scheme, so the seeded catalog shows direct call/email/web actions. */
+  readonly contactMethodKind?: 'PHONE' | 'EMAIL' | 'URL' | 'FREEFORM';
   readonly hours: string;
   readonly cost: string;
   readonly eligibility: string;
@@ -139,7 +145,9 @@ const RESOURCE_SPECS: readonly ResourceSpec[] = [
     serviceName: 'Example Community Food Pantry (synthetic)',
     category: 'FOOD',
     counties: ['Example County'],
-    contactMethod: 'Walk-in intake at the front desk',
+    // Structured PHONE: the veteran resource list renders a direct `tel:` action.
+    contactMethod: syntheticPhone(1),
+    contactMethodKind: 'PHONE',
     hours: 'Weekdays, morning to afternoon',
     cost: 'No cost',
     eligibility: 'All veterans',
@@ -148,6 +156,7 @@ const RESOURCE_SPECS: readonly ResourceSpec[] = [
     serviceName: 'Example Volunteer Rides (synthetic)',
     category: 'TRANSPORTATION',
     counties: ['Example County'],
+    // Unstructured: shown as text, no action guessed.
     contactMethod: 'Request through a responder',
     hours: 'By appointment',
     cost: 'No cost',
@@ -166,7 +175,9 @@ const RESOURCE_SPECS: readonly ResourceSpec[] = [
     serviceName: 'Example Peer Support Circle (synthetic)',
     category: 'PEER_SUPPORT',
     counties: ['Example County'],
-    contactMethod: 'Request through a responder',
+    // Structured EMAIL: renders a direct `mailto:` action.
+    contactMethod: syntheticEmail('peer-support'),
+    contactMethodKind: 'EMAIL',
     hours: 'Weekly meeting',
     cost: 'No cost',
     eligibility: 'All veterans',
@@ -197,6 +208,7 @@ async function ensureResource(pool: Pool, spec: ResourceSpec, actorId: string): 
     category: spec.category,
     counties: spec.counties,
     contactMethod: spec.contactMethod,
+    ...(spec.contactMethodKind === undefined ? {} : { contactMethodKind: spec.contactMethodKind }),
     hours: spec.hours,
     cost: spec.cost,
     eligibility: spec.eligibility,

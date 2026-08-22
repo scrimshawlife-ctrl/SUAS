@@ -27,6 +27,7 @@ import {
   draftReferral,
   FakeAdapter,
   findFulfillment,
+  findResource,
   freshnessBand,
   FulfillmentNotConfirmableError,
   IllegalReferralTransitionError,
@@ -798,6 +799,58 @@ describe('RESOURCES.md — catalog', () => {
 
     expect(requiresStaleWarning('FRESH')).toBe(false);
     expect(requiresStaleWarning('STALE')).toBe(true);
+  });
+
+  it('stores and returns a structured contact-method scheme (P-13)', async () => {
+    const tenantId = syntheticTenantId();
+    const resource = await createResource(pool, {
+      tenantId,
+      serviceName: 'Test Pantry',
+      category: 'FOOD',
+      contactMethod: '+1-555-555-0101',
+      contactMethodKind: 'PHONE',
+    });
+    expect(resource.contactMethod).toBe('+1-555-555-0101');
+    expect(resource.contactMethodKind).toBe('PHONE');
+
+    const reread = await findResource(pool, tenantId, resource.resourceId);
+    expect(reread?.contactMethodKind).toBe('PHONE');
+  });
+
+  it('leaves the scheme unset for an unstructured contact method (P-13)', async () => {
+    const tenantId = syntheticTenantId();
+    const resource = await createResource(pool, {
+      tenantId,
+      serviceName: 'Test Pantry',
+      category: 'FOOD',
+      contactMethod: 'Walk in during posted hours',
+    });
+    expect(resource.contactMethodKind).toBeUndefined();
+  });
+
+  it('rejects an unknown contact-method scheme (P-13)', async () => {
+    const tenantId = syntheticTenantId();
+    await expect(
+      createResource(pool, {
+        tenantId,
+        serviceName: 'Test Pantry',
+        category: 'FOOD',
+        contactMethod: '+1-555-555-0101',
+        contactMethodKind: 'SMOKE_SIGNAL',
+      }),
+    ).rejects.toThrow(ResourceValidationError);
+  });
+
+  it('rejects a scheme with no contact-method value to act on (P-13)', async () => {
+    const tenantId = syntheticTenantId();
+    await expect(
+      createResource(pool, {
+        tenantId,
+        serviceName: 'Test Pantry',
+        category: 'FOOD',
+        contactMethodKind: 'PHONE',
+      }),
+    ).rejects.toThrow(ResourceValidationError);
   });
 
   it('refuses to activate a Resource with no verification evidence', async () => {

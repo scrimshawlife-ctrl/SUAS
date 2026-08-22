@@ -165,6 +165,9 @@ export function registerUiRoutes(app: FastifyInstance, deps: UiRouteDependencies
       ...(result.resource.contactMethod === undefined
         ? {}
         : { contactMethod: result.resource.contactMethod }),
+      ...(result.resource.contactMethodKind === undefined
+        ? {}
+        : { contactMethodKind: result.resource.contactMethodKind }),
       ...(result.resource.hours === undefined ? {} : { hours: result.resource.hours }),
       ...(result.resource.cost === undefined ? {} : { cost: result.resource.cost }),
     }));
