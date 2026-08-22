@@ -19,7 +19,7 @@
  * that defaults to zero is exactly that.
  */
 
-import type { FreshnessBand } from '../fulfillment/index.js';
+import type { ContactMethodKind, FreshnessBand } from '../fulfillment/index.js';
 import type { CategoryCard } from './categories.js';
 import type { QrfFacts } from './qrf.js';
 
@@ -82,20 +82,25 @@ export interface ResourceCategoriesViewModel {
 /**
  * A resource row.
  *
- * §8 asks for "direct phone/email/web actions where allowed", but RESOURCES.md
- * §6 releases `contact_method` as a single unstructured string — the catalog
- * does not record whether a value is a number, an address, or a URL. Rendering
- * a `tel:` or `mailto:` action would mean guessing that structure, so the row
- * carries the released field as text and the surface renders no direct action.
- * Returned to specs as a gap rather than papered over with a parser.
+ * §8 asks for "direct phone/email/web actions where allowed". P-13 gives the
+ * catalog's `contact_method` a scheme discriminator (`contactMethodKind`), so
+ * the surface can offer a direct `tel:`/`mailto:`/web action when the value is a
+ * recorded PHONE/EMAIL/URL. Without a kind (or with `FREEFORM`) the value is
+ * still shown as text and no action is guessed — the release never parses a
+ * scheme out of free text.
  */
 export interface ResourceRowViewModel {
   readonly id: string;
   readonly name: string;
   /** Coverage context, shown only where verified. §8. */
   readonly coverage?: string;
-  /** RESOURCES.md §6 `contact_method`, verbatim and unparsed. */
+  /** RESOURCES.md §6 `contact_method`, verbatim. */
   readonly contactMethod?: string;
+  /**
+   * Scheme of `contactMethod` (P-13). Present only when the catalog recorded a
+   * structured, actionable scheme; absent means render the value as text.
+   */
+  readonly contactMethodKind?: ContactMethodKind;
   readonly hours?: string;
   readonly cost?: string;
   /** Verification freshness. §8 "visible freshness/availability truth when known". */
