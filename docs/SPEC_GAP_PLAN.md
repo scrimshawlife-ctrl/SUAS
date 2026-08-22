@@ -99,7 +99,7 @@ Wave F  draft Rev 3 (islands)           ← defer
 
 **Goal:** Make already-decided rules readable in the files implementers open first. Target: a small `0.1.6` editorial release.
 
-**Drafted** on `SUAS-specs` `cursor/spec-0.1.6-wave-a-hygiene-1036` as `RELEASE_MANIFEST-0.1.6.md`. Lifecycle is owner-controlled: **do not re-pin** `src/release/pins.ts` until that specs PR is merged. G-I-4 is **not** in the draft (no `ServiceOffer`/`ProviderOffer` join exists in this repo to transcribe).
+**Drafted** on `SUAS-specs` `cursor/spec-0.1.6-wave-a-hygiene-1036` as `RELEASE_MANIFEST-0.1.6.md` ([specs PR #9](https://github.com/scrimshawlife-ctrl/suas-specs/pull/9)). Lifecycle is owner-controlled: **do not re-pin** `src/release/pins.ts` until that specs PR is merged. G-I-4 is **not** in the draft (no `ServiceOffer`/`ProviderOffer` join exists in this repo to transcribe).
 
 | ID | Close | Spec files | Owner input needed? |
 | --- | --- | --- | --- |
