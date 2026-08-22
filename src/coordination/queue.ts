@@ -50,10 +50,20 @@ function encodeCursor(createdAt: Date, caseId: string): string {
   return Buffer.from(`${createdAt.toISOString()}|${caseId}`, 'utf8').toString('base64url');
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function decodeCursor(cursor: string): { createdAt: string; caseId: string } | undefined {
   try {
-    const [createdAt, caseId] = Buffer.from(cursor, 'base64url').toString('utf8').split('|');
-    return createdAt !== undefined && caseId !== undefined ? { createdAt, caseId } : undefined;
+    const parts = Buffer.from(cursor, 'base64url').toString('utf8').split('|');
+    if (parts.length !== 2) return undefined;
+    const [createdAt, caseId] = parts;
+    if (createdAt === undefined || caseId === undefined) return undefined;
+    // Validate the decoded shape here so a crafted-but-decodable cursor is a
+    // 400 InvalidCursorError, not a 500 from the `::timestamptz` / `::uuid` cast
+    // in the keyset predicate below.
+    if (Number.isNaN(Date.parse(createdAt))) return undefined;
+    if (!UUID_PATTERN.test(caseId)) return undefined;
+    return { createdAt, caseId };
   } catch {
     return undefined;
   }

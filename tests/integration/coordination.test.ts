@@ -24,6 +24,7 @@ import {
   executeServiceRequestCommand,
   findActiveAssignment,
   IllegalCaseTransitionError,
+  InvalidCursorError,
   listContactAttempts,
   NoActiveAssignmentError,
   NotAssignedResponderError,
@@ -736,6 +737,19 @@ describe('RESPONDER_WORKFLOWS.md §4 — queue contract', () => {
 
     const seen = [...first.cases, ...second.cases].map((item) => item.caseId);
     expect(new Set(seen).size).toBe(4);
+  });
+
+  it('rejects a malformed cursor with a 400 rather than a 500', async () => {
+    const tenantId = syntheticTenantId();
+    // Decodable base64url, but not a "<iso>|<uuid>" keyset — would otherwise
+    // reach the ::timestamptz/::uuid cast and surface as an internal error.
+    const crafted = Buffer.from('not-a-timestamp|not-a-uuid', 'utf8').toString('base64url');
+    await expect(readCaseQueue(pool, tenantId, {}, { cursor: crafted })).rejects.toThrow(
+      InvalidCursorError,
+    );
+    await expect(readCaseQueue(pool, tenantId, {}, { cursor: '!!!not base64!!!' })).rejects.toThrow(
+      InvalidCursorError,
+    );
   });
 
   it('caps the page size regardless of what is asked for', async () => {
