@@ -37,7 +37,7 @@ Specs are authority. Implementation gaps return to specs.
 
 ## Released implementation contract
 
-- spec version: `0.1.2`
+- spec version: `0.1.3`
 - implementation authority: `RELEASED_FOR_IMPLEMENTATION`
 - current implementation stage: `SPEC-017`
 - production/pilot readiness: `NOT_READY`

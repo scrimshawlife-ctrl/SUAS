@@ -1,15 +1,15 @@
-# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.2 handoff
+# IMPLEMENTATION_BOOTSTRAP.md — Released v0.1.3 handoff
 
 **Status:** `ACTIVE`  
-**Released specification:** `0.1.2`  
+**Released specification:** `0.1.3`  
 **Implementation authority:** `RELEASED_FOR_IMPLEMENTATION`  
 **Current stage:** `SPEC-017`
 
 ## Canonical source
 
-- Specs release merge: `79534156df6396e5da7dd6211ff5ead2ce016fb0`
-- Release manifest: `RELEASE_MANIFEST-0.1.2.md`
-- Release decision ledger: `RELEASE_DECISIONS-0.1.2.md`
+- Specs release merge: `33c6f1925a8f8eb7ea1f52e77a102b28a249430f`
+- Release manifest: `RELEASE_MANIFEST-0.1.3.md`
+- Release decision ledger: `RELEASE_DECISIONS-0.1.3.md` (D-018); `RELEASE_DECISIONS-0.1.2.md` (D-017); `RELEASE_DECISIONS-0.1.0.md` otherwise
 - Handoff: `HANDOFF.md`
 - Environment contract: `ENVIRONMENT.md`
 
@@ -42,4 +42,4 @@ LOCAL/TEST/STAGING are synthetic-only and real-external-effect forbidden under `
 
 ## Definition of SPEC-017 start
 
-Implementation begins with Slice 1 against v0.1.2 and records conformance evidence per slice. SPEC-017 completion still does not authorize production; SPEC-018 remains the go/no-go stage.
+Implementation begins with Slice 1 against v0.1.3 and records conformance evidence per slice. SPEC-017 completion still does not authorize production; SPEC-018 remains the go/no-go stage.
