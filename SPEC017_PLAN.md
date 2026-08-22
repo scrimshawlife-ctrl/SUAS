@@ -47,7 +47,7 @@ No readiness gate has advanced, and production remains blocked until SPEC-018.
 
 ## Objective
 
-Build SUAS against the released v0.1.1 contracts and continuously prove conformance without upgrading any production-unavailable release feature by implication.
+Build SUAS against the released v0.1.3 contracts and continuously prove conformance without upgrading any production-unavailable release feature by implication.
 
 ## Slice 1 — Foundation
 
@@ -113,4 +113,4 @@ Each slice includes:
 
 ## SPEC-017 completion
 
-SPEC-017 completes only when the built implementation is audited against the entire released v0.1.1 cut and all material gaps are fixed or returned to specs. SPEC-018 remains required before any real pilot or production operation.
+SPEC-017 completes only when the built implementation is audited against the entire released v0.1.3 cut and all material gaps are fixed or returned to specs. SPEC-018 remains required before any real pilot or production operation.
