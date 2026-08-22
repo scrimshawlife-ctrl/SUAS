@@ -23,6 +23,7 @@
     "start": "node dist/main.js",
     "migrate": "tsx src/cli/migrate.ts",
     "provenance": "tsx src/cli/provenance.ts",
+    "seed": "tsx src/cli/seed-local.ts",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {
