@@ -187,6 +187,7 @@ break-glass/dual-control (`AUTH.md` §7), abandoned Check-In idle timeout
 
 ## Cross-references
 
+- Close sequence for remaining gaps: `docs/SPEC_GAP_PLAN.md`.
 - Per-slice returned-gap detail: `docs/slices/SLICE_01_FOUNDATION.md` … `docs/slices/SLICE_11_RESILIENCE_HARNESS.md` (each `## 10` section).
 - Built-implementation conformance snapshot: `docs/SPEC017_COMPLETION_AUDIT.md`.
 - Runtime spec pins this triage is filed against: `src/release/pins.ts`.
